@@ -1,0 +1,72 @@
+= CCNP
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 24.02.2021
+//:keywords: 
+//:sectnums: 
+// Configuracion de la tabla de contenidos
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+
+// Ruta base de las imagenes
+:imagesdir: ./README.assets/ 
+
+// Resaltar sintaxis
+:source-highlighter: pygments
+
+// Iconos para entorno local
+ifndef::env-github[:icons: font]
+
+// Iconos para entorno github
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Apuntes del curso de CCNP
+
+[source,sh]
+Febrero de 2021
+Autor: rhodfra@gmail.com 
+Apuntes del curso de CCNP 
+packettracer v7.3
+
+image:ccnp.png[]
+
+== Temario
+
+.CCNP Routing & Switching
+. Virtual Link OSPF
+. EIGRP con un sistema autónomo
+. EIGRP con varios sistemas autónomos
+. Redistribución
+. Redistribución con route MAP 
+. VTP (VLAN Trunk Protocol)
+. PPP (Protocol Point to Point) +
+CHAP y PAP, PPP Multilink
+. BGP (Bjorder Gateway Protocol)
+
+.CCNP Security
+. Privilegios de usuarios
+. Vistas 
+. Seguridad en conexiones remotas (ssh y telnet)
+. AAA (Authentication, authorization y accounting)
+. Servidor radius y tacacs+
+. Router inalámbrico con servidor radius
+. Distribución
+. PBR (Policy Based Routed)
+. BPDU Guard, root guard, violación de puertos
+. Firewall ASA (Inspector de estados, WEB VPN, NAT flotante, Zona DMZ)
+. Tunel GRE
+. VPN's 
+. IDS e IPS
+. SNMP
+
+.Extra CCNP Collaboration
+. VoIP
+
+
