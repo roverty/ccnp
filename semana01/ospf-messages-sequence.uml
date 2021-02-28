@@ -1,0 +1,14 @@
+@startuml
+R3 ->  R1       : hello (estado DOWN) con IP multicast 224.0.0.5
+note over R1, R3: R1 recibe mensaje de hello y pasa al estado INIT
+R1 --> R3       : R1 manda su propio hello
+note over R1, R3: R3 observa que en mismo hello esta su propio router-id, 
+note over R1, R3: Se pasa al estado TWO-WAY
+R3 --> R1       : Intercambia DBD (Database description)
+R1 --> R3       : Intercambia DBD
+note over R1, R3: DBD es un resumen de las tablas LSA
+note over R1, R3: Se pasa al estado de EXSTART
+note over R1, R3: Para actualizar la tabla Link-state se pasa al estado EXCHANGE
+note over R1, R3: Cuando se completan las tablas se pasa al estado LOADING STATE
+note over R1, R3: Cuando se completa la adyacencia pasamos a FULL
+@enduml

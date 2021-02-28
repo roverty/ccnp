@@ -1,0 +1,265 @@
+= Semana 1
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 24.02.2021
+:description: Semana 1 del curso de CCNP
+//:keywords: 
+:sectnums: 
+// Configuracion de la tabla de contenidos
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+
+// Ruta base de las imagenes
+:imagesdir: ./README.assets/ 
+
+// Resaltar sintaxis
+:source-highlighter: pygments
+
+// Iconos para entorno local
+ifndef::env-github[:icons: font]
+
+// Iconos para entorno github
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 1 del curso de Cisco CNNP
+
+toc::[]
+
+== Instalación de imagen en GNS3
+
+1. Ir al menú "Edit" y luego a "Preferences"
+
+2. Nos vamos a la parte de IOS router y posteriormente elegimos  "New Image" +
+image:gns3-01.png[]
+
+3. Damos click en "Next" y nos pedirá los siguientes datos +
+image:gns3-02.png[]
+
+4. En las configuraciones que no se indiquen se dejan las que estan por default.
+Podemos agregar más slots: +
+image:gns3-03.png[]
+
+5. Para los módulos WIC (Manejo de señales): +
+image:gns3-04.png[]
+
+6. Al darle "Next" aparecerá la siguiente ventana a la que debemos darle click
+en el botón "Idle-PC finder". +
+image:gns3-05.png[]
+
+7. Damos OK y aplicar.
+
+8. En la parte de routers ya deberían aparecer 
+
+9. No olvidar dar click en el botón de "Play" para poder empezar a utilizarlos.
+
+[IMPORTANT]
+*No olvidar escribir _wr_ para guardar la configuración, ya que no se guarda por
+defecto como en el caso de Packet Tracer*
+
+== Introducción 
+
+.OSFP 
+* Protocolo dinámico
+* Se basa en áreas
+* Distancia administrativa:110
+* Métrica: Costo (Ancho de banda de referencia y ancho de banda de la red)
+* Varios tipos (PPP, Broadcast)
+
+=== Comandos útiles
+
+[source,sh]
+show ip interface brief
+show ip route
+
+=== Mini práctica 1 (OSPF)
+
+* Asegurarse de crear las loopback y las direcciones ip correspondientes.
+
+[NOTE]
+====
+Para crear un *loopback*
+[source,sh]
+interface loopback 1 
+ip address 1.1.1.1 255.255.255.0
+
+====
+
+image:ospf.png[]
+
+. Habilitar OSFP en R1 + 
+[source,sh]
+router ospf 1
+network 192.168.12.0 0.0.0.255 area 0
+network 192.168.13.0 0.0.0.255 area 0
+# Anuncar la loopback
+# Se puede hacer desde la interfaz loopback
+interface loopback 1 
+ip ospf 1 area 0
+
+. Habilitar OSFP en R3 +
+[source,sh]
+router ospf 1
+ip ospf 1 area 0
+# Buscamos la loopback
+show ip interface brief
+#
+interface fa0/0
+ip ospf 1 area 0
+#
+interface loopback 1 
+ip ospf 1 area 0
+# 
+# Tabla de vecinos
+sh ip ospf neighbor
+#
+# Mostrar solo segmentos conocidos por OSPF
+show ip route ospf
+#
+# Mostrar el network type 
+show ip ospf interface fa0/0
+#
+# Se debe refrescar OSPF 
+clear ip ospf process
+#
+# Mostrar la tabla de base de datos
+show ip ospf database
+
+=== Mini práctica 2 (NAT)
+
+El NAT nos ayuda a hacer la traducción de IPs privadas a públicas (generalmente
+para salir a internet)
+
+image:nat.png[]
+
+.Tenemos 3 tipos de NATeo
+* Estático
+* Dinámico
+* Virtual interface
+
+//-
+. Vamos a negar un segmento de red para practicar el nateo +
+[source,sh]
+sh run | section os
+router ospf 1 
+no network 192.168.12.0 0.0.0.255 area 0
+
+. El tráfico irá de R3, pasará por una NAT (de R1) y llegará a R2 + 
+Notar que el _ping_ no debe salir
+
+. Aplicaremos *NATeo estático* +
+[source,sh]
+# en R1
+# NO funciona en simulador 
+ip nat source static 172.30.30.3 192.168.12.200
+# SI funciona en simulador
+ip nat source static 192.168.13.3 192.168.12.200
+interface fa0/0
+ip nat inside
+interface fa0/1 
+ip nat outside
+ip route 0.0.0.0 0.0.0.0 192.168.12.2
+router ospf 1
+default-information originate
+
+. *NATeo dinámico* +
+[source,sh]
+# En R1 
+no ip nat source static 172.30.30.3 192.168.12.200
+no ip nat source static 192.168.13.3 192.168.12.200
+#
+ip nat pool CCNP 200.200.200.1 200.200.200.10 netmask 255.255.255.0
+#
+ip nat inside source list 1 pool CCNP
+access-list 1 permit any 
+# NO ejecutar: access-list 101 deny ip any any 
+clear ip nat translation *
+# En R2 
+ip route 0.0.0.0 0.0.0.0 192.168.12.1
+show ip nat translations
+
+. *NAT virtual interface*
+[source,sh]
+# En R1
+clear ip nat translation *
+no ip nat inside source list 1 pool CCNP
+no ip nat pool CCNP 200.200.200.1 200.200.200.10 netmask 255.255.255.0
+# Habilitar el NAT virtual
+ip nat enable
+
+. *NAT de sobreflujo*
+[source,sh]
+ip nat insdie source list 1 interface gi0/0/1 
+# Si no tenemos la ACL debemos crearla
+
+. Bloquear el ping
+[source,sh]
+access-list 101 deny icmp host 192.168.13.3 any echo-reply
+interface gi0/0/0 
+ip access-group 101 in 
+
+== OSPF messages
+
+image:ospf-messages.png[]
+
+.OSPF Packet Messages 
+* Adyacencia: Tiempo que tardan los routers en saludarse
+
+image:ospf-messages-sequence.svg[]
+
+//* R3 Manda un hello a R1 (estado DOWN) con IP multicast 224.0.0.5
+//* R1 recibe el mensaje Hello y pasa a un estado INIT, ahora R1 le mandar a R3 su
+//propio hello
+//* CuandoR3 se da cuenta que en el mismo hello esta su propio router-id, pasamos
+//al estado TWO-WAY
+//* Ambos routers se van a cambiar su DBD (es un resumen de las tablas de LSA) y
+//se pasa al estado de EXSTART 
+//* Ya intercambiados los DBD (DataBAse Description) para actualizar la tabla
+//Link-state pasar a lestado EXCHANGE
+//* CUando se completan esas tablas se llega al estado final de OSPF llamdo
+//LOADING STATE
+//* Cuando se completa la adyacencia pasamos al estado FULL
+
+=== Mini práctica
+
+Intentaremos mostrar los estados vistos 
+
+[source,sh]
+----
+# R3
+sh ip interface brief
+# R1
+sh ip interface brief
+# R3 
+# Levantamos un debug
+debug ip ospf adj
+debug ip ospf packet
+# Anunciamos OSFP 
+router ospf 1 
+network 192.168.13.0 0.0.0.255 area 0 
+network 172.30.30.0 0.0.0.255 area 0
+sh ip ospf neighbor
+# R1 
+router ospf 1 
+network 192.168.13.0 0.0.0.255 area 0
+network 1.1.1.1 0.0.0.0 area 0
+sh run | section ospf
+
+----
+
+Tenemos que ver todos los mensajes de debugeo de la siguiente manera
+
+image:ospf-messages-02.png[]
+
+Para parar el debugeo
+[source,sh]
+undebug all
+
+[NOTE]
+OSPF v3 es para ipv6
