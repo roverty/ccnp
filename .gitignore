@@ -2,7 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=latex
 
 recursos/
-*gns3/
+project-files/
 
 ### LaTeX ###
 ## Core latex/pdflatex auxiliary files:
