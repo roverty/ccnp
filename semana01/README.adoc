@@ -87,7 +87,7 @@ show ip route
 Para crear un *loopback*
 [source,sh]
 interface loopback 1 
-ip address 1.1.1.1 255.255.255.0
+ip address 1.1.1.1 255.255.255.225
 
 ====
 
@@ -106,7 +106,6 @@ ip ospf 1 area 0
 . Habilitar OSFP en R3 +
 [source,sh]
 router ospf 1
-ip ospf 1 area 0
 # Buscamos la loopback
 show ip interface brief
 #
@@ -131,6 +130,8 @@ clear ip ospf process
 # Mostrar la tabla de base de datos
 show ip ospf database
 
+. Por el momento no se activa OSFP en R2
+
 === Mini práctica 2 (NAT)
 
 El NAT nos ayuda a hacer la traducción de IPs privadas a públicas (generalmente
@@ -146,20 +147,22 @@ image:nat.png[]
 //-
 . Vamos a negar un segmento de red para practicar el nateo +
 [source,sh]
+# En R1
+# Mostrando la configuracion para OSPF
 sh run | section os
 router ospf 1 
 no network 192.168.12.0 0.0.0.255 area 0
 
 . El tráfico irá de R3, pasará por una NAT (de R1) y llegará a R2 + 
-Notar que el _ping_ no debe salir
+Notar que el _ping_ no debe salir (Ya no esta enrutado)
 
 . Aplicaremos *NATeo estático* +
 [source,sh]
 # en R1
-# NO funciona en simulador 
-ip nat source static 172.30.30.3 192.168.12.200
+# NO funciona en simulador (es la loopback)
+ip nat inside source static 172.30.30.3 192.168.12.200
 # SI funciona en simulador
-ip nat source static 192.168.13.3 192.168.12.200
+ip nat inside source static 192.168.13.3 192.168.12.200
 interface fa0/0
 ip nat inside
 interface fa0/1 
@@ -171,17 +174,20 @@ default-information originate
 . *NATeo dinámico* +
 [source,sh]
 # En R1 
-no ip nat source static 172.30.30.3 192.168.12.200
-no ip nat source static 192.168.13.3 192.168.12.200
+no ip nat inside source static 172.30.30.3 192.168.12.200
+no ip nat inside source static 192.168.13.3 192.168.12.200
 #
 ip nat pool CCNP 200.200.200.1 200.200.200.10 netmask 255.255.255.0
 #
 ip nat inside source list 1 pool CCNP
+#
 access-list 1 permit any 
 # NO ejecutar: access-list 101 deny ip any any 
 clear ip nat translation *
 # En R2 
-ip route 0.0.0.0 0.0.0.0 192.168.12.1
+# Cualquier de las siguientes opciones es valida 
+ip route 200.200.200.0 255.255.255.0 192.168.12.1 #Op1
+ip route 0.0.0.0 0.0.0.0 192.168.12.1             #Op2
 show ip nat translations
 
 . *NAT virtual interface*
@@ -195,8 +201,10 @@ ip nat enable
 
 . *NAT de sobreflujo*
 [source,sh]
-ip nat insdie source list 1 interface gi0/0/1 
+ip nat inside source list 1 interface gi0/0/1 
 # Si no tenemos la ACL debemos crearla
+# En R1 
+sh ip nat translations
 
 . Bloquear el ping
 [source,sh]
