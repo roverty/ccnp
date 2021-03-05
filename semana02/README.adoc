@@ -1,0 +1,256 @@
+= Semana 2
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 24.02.2021
+:description: Semana 2 del curso de CCNP
+//:keywords: 
+:sectnums: 
+// Configuracion de la tabla de contenidos
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+
+// Ruta base de las imagenes
+:imagesdir: ./README.assets/ 
+
+// Resaltar sintaxis
+:source-highlighter: pygments
+
+// Iconos para entorno local
+ifndef::env-github[:icons: font]
+
+// Iconos para entorno github
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 2 del curso de Cisco CNNP
+
+toc::[]
+
+== Autentificación de OSPF
+
+[NOTE]
+====
+Las 2 direcciones ip multicast que utiliza OSPF son: 
+
+225.0.0.5 :: Para todos los routers
+224.0.0.6 :: Para todos los DR/BDR (router designado/router designado de backup)
+
+//-
+
+.Más conceptos de OSPF
+* Adyacencia: Tiempo que tardan los routers en saludarse
+* Convergencia: Tiempo que tardan los routers en compartir la tabla de
+* enrutamiento.
+====
+
+La autentificación se utiliza para que no cualquier router pueda hacer
+adyacencia con él.
+
+Se realiza por medio de la transmisión de _llaves_, debe ser las mismas.
+
+.Existen 3 tipos
+* None (Por default)
+* Texto en claro
+* MD5
+
+_Para descubrir si tenemos algún método de autentificación se puede consultar:_
+
+[source,sh]
+sh ip interface fa0/0_
+
+=== Mini práctica
+
+Existen varias maneras de elegir el router designado. En esta ocasión
+utilizaremos la del _router id_
+
+==== Topología 1 (Broadcast)
+
+*Comandos y conceptos para repasar OSPF*
+
+image::ospf-top01.png[]
+
+.Notas rápidas
+* Prioridad 1 : Contienda (en tipo broadcast)
+* En la tabla de vecinos existe el "2WAY/DROTHER" el cual significa que el
+router tiene que seguir 2 caminos para llegar a su destino. 
+** Por ejemplo, para llegar de R3 a R1 los paquetes primero deben llegar a R4 y
+a R2.
+
+[source,sh]
+----
+##### Comandos de ayuda
+
+# Ver la adyacencia
+sh ip ospf neighbor
+# Limpiar la tabla de base de datos en cada router
+clear ip ospf process 
+# Ver la tabla de base de datos
+sh ip ospf database
+sh ip route
+sh ip interface fa0/0
+# Ejecutar en R1 y R2
+
+----
+
+
+==== Topología 2 (autentificación texto en claro)
+
+image::ospf-top02.png[]
+
+Asegurarse de enrutar con OSPF, después de configurar la autentificación
+
+Aplicar la configuración en R5 y en R6
+
+[source,sh]
+interface se0/0/0
+ip ospf authentication-key c1$c0 
+router ospf 
+area 0 authentication
+
+==== Topología 3 (autentificación MD5)
+
+image::ospf-top03.png[]
+
+Del mismo modo, habilitar el enrutamiento OSPF al terminar de colocar la
+autentificación
+
+[source,sh]
+interface fax/x
+ip ospf message-digest-key X md5 c1$c0 
+# En donde 
+# X es el numero de llave (colocar 1)
+router ospf 1 
+area 0 authentication message-digest
+
+== OSPF (Virtual Link)
+
+Nos puedes ayudar a conectar (enrutar) segmentos de red que no se encuentren
+directamente conectadas al aréa 0
+
+image::ospf-top04.png[]
+
+.Antes de comenzar
+* Armar la topología
+* Habilitar OSPF
+
+Los routers de frontera nos ayudarán a crear el _link virtual_
+
+[IMPORTANT]
+====
+En la tabla de vecinos solo nos debe aparecer las adyancencias del área en donde
+estamos consultando dicha tabla
+[source,sh]
+# En R1
+sh ip ospf neighbor
+
+.Mostrará únicamente 
+* *1.1.1.1*, 
+* *2.2.2.2* 
+* *3.3.3.3*
+
+En los router frontera cambiará un poco, comprobar haciendo un 
+[source,sh]
+# En R4
+sh ip ospf neighbor
+
+====
+
+Para desplegar el virtual link se requiere forzosamente utilizar _router ids_ en
+la configuración de ospf.
+
+Siempre aplica en los router frontera.
+
+*Comandos para configurarlo (siempre en el _router frontera_)*
+
+[source,sh]
+router ospf X 
+area X virtual-link x.x.x.x
+# En donde 
+# x.x.x.x es el id del router el siguiente salto
+
+Para nuestra topología
+
+[source,sh]
+----
+# En R4
+router ospf 1 
+area 1 virtual-link 6.6.6.6 # (Router R5, la otra frontera)
+
+# En R6 
+router ospf 1 
+area 1 virtual-link 4.4.4.4
+
+----
+
+Ahora, volvemos a ver la tabla de enrutamiento  y veremos que nos mostrará los
+segmentos de red que se acaban de conocer por OSPF
+[source,sh]
+sh ip route
+
+También  podemos revisar la tabla de base de datos para encontrar que tenemos un
+nuevo router frontera detectado.
+
+[source,sh]
+sh ip ospf database
+
+== Otras características de OSPF
+
+Utilizaremos la siguiente topología
+
+image::ospf-top05.png[]
+
+=== Interfaz Pasiva
+
+Vamos a evitar que se creen adyancencias y convergencias
+
+[source,sh]
+----
+# En R9
+router ospf 1 
+passive interface fax/x
+# Pasa el estado FULL al DOWN
+# El ping ahora deberá fallar 
+ping 192.168.2.1
+
+----
+
+Otro comando interesante 
+
+[source,sh]
+----
+# Todas las interfaces del router pasan a modo pasivo
+passive interface default
+
+----
+
+=== OSPF Virtual-link authentication
+
+Recordemos que solo se aplica en los routers frontera. 
+
+*Para la autentificación de _texto en claro_ tenemos lo siguiente*
+
+[source,sh]
+-----
+# Desde R4
+router ospf 1 
+area X virtual-link 6.6.6.6 authentication-key mypassword
+# Ojo: Para R6 solo se cambia el router-id por el 4.4.4.4
+
+-----
+
+*Autentificación con MD5* 
+
+[source,sh]
+----
+# Desde R4
+router ospf 1 
+area 1 virtual-link 6.6.6.6 message-digest-key 1 md5 c1$c0
+# Ojo: Para R6 solo se cambia el router-id por el 4.4.4.4
+
+----
