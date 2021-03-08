@@ -1,0 +1,173 @@
+= Semana 3
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 07.03.2021
+:description: Semana 3 del curso de CCNP
+//:keywords: 
+:sectnums: 
+// Configuracion de la tabla de contenidos
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+
+// Ruta base de las imagenes
+:imagesdir: ./README.assets/ 
+
+// Resaltar sintaxis
+:source-highlighter: pygments
+
+// Iconos para entorno local
+ifndef::env-github[:icons: font]
+
+// Iconos para entorno github
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 3 del curso de Cisco CNNP
+
+toc::[]
+
+== OSPF Default-Route
+
+[NOTE]
+Recordemos que la ruta por defecto nos ayuda a que todo lo que se conoce por
+OSPF salga propagado por OSPF.
+
+image::top01.png[]
+
+.Observaciones
+* No anuncar la loopback 1.1.1.1 en OSPF
+
+Utilizaremos el comando `default-information` sin crear una ruta estática por
+defecto.
+
+[source,sh]
+----
+# En R1
+router ospf 1
+default-information originate always
+----
+
+Ahora puedo llegar de R1 a R3
+
+Ver la tabla de enrutamiento de R2, sucede un fenómeno interesante.
+
+image:r2-tabla-enrutamiento.png[]
+
+Lo que esta pasando es que R1 crea en automático su ruta estática por defecto
+para que puedan llegar a él.
+
+Para comprobar lo anterior se puede hacer ping a la loopback 1.1.1.1 desde R3. 
+
+A pesar de que el segmento no se conozca por rip se podrá hacer ping debido al
+comando anterior.
+
+== OSPF Area Stub
+
+image::top02.png[]
+
+.De la topología de arriba
+* Quitamos el OSPF de R1 
+
+En R1
+[source,sh]
+router ospf 1
+network 192.168.12.0 0.0.0.255 area 0
+
+El objetivo es poder hacer ping a la Loopback que no ha sido declarada en OSPF. 
+Para ello nos vamos a apoyar en el concepto de *redistribución*. 
+
+La *redistribución* se refiere a la traducción de métricas. Para ello:
+
+[source,sh]
+router ospf 1 
+redistribute connected subnets
+
+Con esto logramos que la loopkback este en R2 y R3
+
+Si mostramos la configuración de R2 obtendremos lo siguiente
+
+image::r2-enrutamiento.png[]
+
+Se observa que la loopkback *1.1.1.1* se conoció por OSPF y además tiene un
+indicador más: _E2_ el cual nos dice que se conoció por medio de la
+redistribución
+
+*Ahora bien, supongamos que R1 se conecta con otros router y que R3 es un router
+final*
+
+Con la distribución aparecen los _link states_ de *tipo 5*, comprobar en R1:
+
+[source,sh]
+sh ip ospf database
+
+R1 al hacer redistribución se convierte en ASBR (Autonomus System Border Router)
+
+Como R3 es el _último router_ de la topología en el área que lo contiene podemos
+convertirla en *área stub* con los siguientes comandos:
+
+[source,sh]
+----
+# En R2 y R3 (Son los del área 1, que queremos que sea stub)
+router ospf 1 
+area 1 stub
+----
+
+Al realiza lo anterior observamos que ya no nos aparece *O E2* en la tabla de
+enrutamiento de R3. Ahora tenemos lo siguiente:
+
+image::r3-enrutamiento.png[]
+
+Observamos que ahora aparece _O *IA_, es decir se agrar un ruta estática por
+defecto. La razón es porque R3 solo necesita llegar a R2 para después salir por
+dicho router a cualquer segmento conocido en R2.
+
+Por otra parte, al consultar la tabla de enrutamiento de R2 vemos que no se crea
+la ruta estática porque R2 no es el último router en el área 1.
+
+*Al usar _area stub_ negamos la existencia del LSA de tipo 5*
+
+
+== OSPF Area Totally Stub 
+
+image::top02.png[]
+
+.Hasta ahora tenemos lo siguiente
+* R1 habla link state de tipo 5 (ASBR)
+* R2 habla link state de tipo 3 (DR)
+
+El _OSPF area totally stub_ busca el impedimento de LSA de tipo 3
+
+[NOTE]
+El link state de tipo 4 también es para redistribución
+
+Para configurar este _feature_ nos vamos el *border router*, en este caso R2
+
+[source,sh]
+----
+# En R2 
+router ospf 1 
+area 1 stub no summary
+----
+
+En este caso en R3 vemos que ya solo está presente el ruta estática en su tabla
+de enrutamiento.
+
+image:r3-enrutamiento-02.png[]
+
+Observar la tabla de base de datos de R3
+
+[source,sh]
+sh ip ospf database
+
+En los LSA de tipo 3 solo aparecerá 0.0.0.0, que corresponde a la ruta estática
+por defecto.
+
+image:r3-enrutamiento-03.png[]
+
+== OSPF Prefix-Filtering
