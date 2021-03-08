@@ -85,8 +85,11 @@ Para ello nos vamos a apoyar en el concepto de *redistribución*.
 La *redistribución* se refiere a la traducción de métricas. Para ello:
 
 [source,sh]
+----
+# En R1
 router ospf 1 
 redistribute connected subnets
+----
 
 Con esto logramos que la loopkback este en R2 y R3
 
@@ -152,7 +155,7 @@ Para configurar este _feature_ nos vamos el *border router*, en este caso R2
 ----
 # En R2 
 router ospf 1 
-area 1 stub no summary
+area 1 stub no-summary
 ----
 
 En este caso en R3 vemos que ya solo está presente el ruta estática en su tabla
@@ -176,7 +179,7 @@ _Son parecidas a las listas de control de acceso_
 
 Seguiremos utilizando la topología anterior
 
-image::top02.png[]
+image::top03.png[]
 
 * Se puede dejar la configuración normal de enrutamiento
 como nosotros sabemos hacerlo.
@@ -191,7 +194,7 @@ Las configuraciones se deben llevar a cabo en *R2* ya que es el que pasa los
 paquetes de R1 a R3 y viceversa.
 
 [source,sh]
-ip prefix-list ccnp deny 11.11.11.0/32
+ip prefix-list ccnp deny 11.11.11.11/32
 # Similar a como lo hacemos en ACL debemos permitir todo lo demas
 ip prefix-list ccnp permit 0.0.0.0/0 le 32
 #
