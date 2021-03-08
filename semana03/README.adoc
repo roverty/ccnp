@@ -41,7 +41,7 @@ OSPF salga propagado por OSPF.
 image::top01.png[]
 
 .Observaciones
-* No anuncar la loopback 1.1.1.1 en OSPF
+* No anunciar la loopback 1.1.1.1 en OSPF
 
 Utilizaremos el comando `default-information` sin crear una ruta estática por
 defecto.
@@ -64,7 +64,7 @@ para que puedan llegar a él.
 
 Para comprobar lo anterior se puede hacer ping a la loopback 1.1.1.1 desde R3. 
 
-A pesar de que el segmento no se conozca por rip se podrá hacer ping debido al
+A pesar de que el segmento no se conozca por ospf se podrá hacer ping debido al
 comando anterior.
 
 == OSPF Area Stub
@@ -171,3 +171,51 @@ por defecto.
 image:r3-enrutamiento-03.png[]
 
 == OSPF Prefix-Filtering
+
+_Son parecidas a las listas de control de acceso_
+
+Seguiremos utilizando la topología anterior
+
+image::top02.png[]
+
+* Se puede dejar la configuración normal de enrutamiento
+como nosotros sabemos hacerlo.
+* Se debe quitar el *area tub*
+
+El OSPF Prefix-Filtering sirve para ocultar direcciones IP's a otros routers 
+sin necesidad de configurar el router como _passive_
+
+=== Mini práctica
+
+Las configuraciones se deben llevar a cabo en *R2* ya que es el que pasa los 
+paquetes de R1 a R3 y viceversa.
+
+[source,sh]
+ip prefix-list ccnp deny 11.11.11.0/32
+# Similar a como lo hacemos en ACL debemos permitir todo lo demas
+ip prefix-list ccnp permit 0.0.0.0/0 le 32
+#
+router ospf 1
+area 1 filter-list prefix ccnp in 
+
+Ver la tabla de enrutamiento en *R3* e intentar hacer ping a loopback 
+11.11.11.11 (debería fallar)
+
+image:r3-enrutamiento-04.png[]
+
+Notar que la loopback 11.11.11.11 ya no aparece 
+
+Podemos hacer una segunda denegación
+
+[source,sh]
+----
+# En R2
+ip prefix-list gen21 deny 3.3.3.3/32
+ip prefix-list gen21 permit 0.0.0.0/0 le 32
+#
+router ospf 1
+# Gastamos poder de procesamiento al ponerla como out
+area 1 filter-list prefix gen21 out
+----
+
+Verificar que la loopback 3.3.3.3 ya no es visisble en R1
