@@ -222,3 +222,192 @@ area 1 filter-list prefix gen21 out
 ----
 
 Verificar que la loopback 3.3.3.3 ya no es visisble en R1
+
+== EIGRP (Enhanced Interior Gateway Routing Protocol)
+
+EIGRP es un protocolo de *enrutamiento dinámico* (Antes se daba en CCNA v6).
+Creado por CISCO.
+
+Los paquetes de multidifusión EIGRP para IPv4 utilizan la dirección IPv4 de
+multidifusión reservada 224.0.0.10
+
+Los paquetes de multidifusión EIGRP para IPv6 se envína a la direción de
+multidifusión reservada FF02::A. 
+
+Existen *3 tablas de EIGRP* 
+
+[source,sh]
+sh ip route 
+sh ip eigrp neighbor 
+sh ip eigrp topology
+
+*Métrica (distancia factible)*
+
+.Por medio de 5 parámetros (se muestran los valores por defecto)
+* K1 = Ancho de banda = 1 
+* K2 = Carga = 0
+* K3 = Demora = 1 
+* K4 = Confiabilidad = 0 
+* K5 = Confiabilidad = 0 
+
+.Distancia administrativas (Grado de confiabilidad del protocolo)
+* 90 = S. A. (sistemas autónomos) internos 
+* 170 = S. A. externos
+
+No tenemos router designado, router de backup, network types, pero si vamos a
+tener adyacencia. EIGRP es un protocolo rápido
+
+EIGRP utiliza un proceso llamado dual, lo cual lo hace escalable, pero sobre
+todo con tolerancia a fallos,si se pierde algún camino EIGRP no cae, en la tabla
+de EIGRP ya existe una topología de backup.
+
+=== Proceso de EIGRP 
+
+*Descubrimiento de vecinos*
+
+image::eigrp-vecinos.png[]
+
+*Intercambio de actualizaciones de Routing* 
+
+image::eigrp-actualizaciones.png[]
+
+*Actualización de la tabla de ruteo*
+
+image::eigrp-tabla-ruteo.png[]
+
+=== Mini práctica EIGRP
+
+image::topologia-eigrp.png[]
+
+* Los *routers frontera* van a ser aquellos que hablen más de un sistema
+autónomo
+
+[source,sh]
+----
+# Router 0 
+router eigrp 1 
+network 192.168.1.0 0.0.0.255       
+# La wildcard es opcinal por defecto toma la mascara dependiendo del tipo de red
+# que declaremos
+network 10.100.1.0
+network 30.100.1.0
+#Router 1 
+router eigrp 1 
+network 10.100.1.0 
+network 20.100.1.0
+# Router 2 
+router eigrp 1 
+network 30.100.1.0 
+network 20.100.1.0
+
+----
+
+Probamos en R0 
+
+[source,sh]
+----
+sh ip route
+----
+
+image::eigrp-tabla-02.png[]
+image::eigrp-tabla-01.png[]
+
+_¿Cómo se calcula la métrica?_
+
+image::formula-metrica.png[]
+
+*Tabla de vecinos y de topología*
+
+image:eigrp-vecinos-topologia.png[]
+
+.Observaciones 
+* Los sucesores hacen referencia al número de redundancias en caso de que alguna
+lleva a fallar tenemos la otra.
+* _FD_ es la distancia factible, es decir, la métrica. 
+* También se puede configurar un router id manual
+** En este caso sirve para presentarnos en nuestra topologia.
+
+Podemos asignar un _router id_ 
+
+[source.sh]
+----
+# En Router0 
+router eigrp 1 
+eigrp router-id 1.1.1.1
+----
+
+.Consideraciones:
+* No se pueden repetir
+* No se puede utilizar el 0.0.0.0
+* No se puede utilizar el 255.255.255.255
+
+
+==== Continuando con las configuraciones ... 
+
+Recordar que internet nunca se enruta, por lo cual Router8 no es un router
+frontera.
+
+En Router 2:
+
+[source,sh]
+----
+# En Router2
+network 40.100.1.0 
+network 50.100.1.0 
+
+----
+
+Si mostramos la tabla de enrutamiento en Router0 veremos que aún no nos muestra
+los segmentos aprendidos, _¿Qué hacer?_ *Necesitamos una _redistribución_ entre
+sitemas autonómos*.
+
+Recordar que solo se aplica el siguiente comando en los _routers frontera_
+
+[source,sh]
+----
+# En router2
+router eigrp 1 
+redistribute eigrp 2
+exit 
+
+router eigrp 2 
+redistribute eigrp 1
+
+----
+
+Gracias a lo anterior ahora puedo conocer los segmentos de red de un sistema
+autonómo externo.
+
+image::eigrp-ase.png[]
+
+.Lo mismo se hace con el router frontera 6
+* Se redistribuye AS3 en AS2 y viceversa
+* No es necesario involucrar a AS1 debido a que ya ha sido restribuida por medio
+de Router2
+
+Al final la configuración de Router6 debe verse así 
+
+image::r6-config.png[]
+
+*Analicemos la última salida de eigrp 
+
+image::dex.png[]
+
+Como internet no se enruta tenemos que hacer un _ruta estática por defecto_
+
+[source,sh]
+----
+# En Router8 
+ip route 0.0.0.0 0.0.0.0 172.168.1.2
+
+----
+
+Para propagar la ruta estática por defecto utilizabamos _default information
+originate_, sin embargo, para el caso de eigrp no exite.
+
+Sin embargo, podemos hacer una redistribución 
+
+[source,sh]
+----
+redistribute static
+----
