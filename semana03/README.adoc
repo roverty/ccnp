@@ -352,6 +352,8 @@ En Router 2:
 [source,sh]
 ----
 # En Router2
+# Recordar que estamos en el sistema autonómo 2
+router eigrp 2
 network 40.100.1.0 
 network 50.100.1.0 
 
@@ -409,5 +411,6 @@ Sin embargo, podemos hacer una redistribución
 
 [source,sh]
 ----
+router eigrp 3
 redistribute static
 ----
