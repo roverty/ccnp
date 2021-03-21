@@ -1,0 +1,174 @@
+= Semana 4
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 07.03.2021
+:description: Semana 4 del curso de CCNP
+//:keywords: 
+:sectnums: 
+// Configuracion de la tabla de contenidos
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+
+// Ruta base de las imagenes
+:imagesdir: ./README.assets/ 
+
+// Resaltar sintaxis
+:source-highlighter: pygments
+
+// Iconos para entorno local
+ifndef::env-github[:icons: font]
+
+// Iconos para entorno github
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 3 del curso de Cisco CNNP
+
+toc::[]
+
+== EIGRP Features 
+
+=== Hello and hold timers 
+
+(Tiempos de adyacencia y convergencia)
+
+Hello packet -> Tiempo en el que se saludan los routers (5 seg por defecto)
+
+Hold Time -> Tolerancia en la que se espera el mensaje (15 seg por defecto)
+
+Veámoslo en la siguiente topología.
+
+image:topo01.png[]
+
+.Observaciones
+* Se configurar 2 loopbacks, aunque en la configuración de eigrp solo aparece la
+dirección de tipo, las dos loopbacks se declararon en EIGRP.
+* De hecho del R2 podemos hacerle _ping_ a cualquiera de las loopbacks para
+comprobar que todo funciona.
+
+image:topo01-config.png[]
+
+Ahora hacemos 
+
+[source,sh]
+----
+sh ip eigrp neighbors
+----
+
+image:topo01-neighbor.png[]
+
+Podemos cambiar el tiempo de _hello_
+
+[source,sh]
+----
+# En R1 
+interface fa0/0
+ip hold-time eigrp 1 3600 #<1>
+----
+<1> El valor esta dado en segundos
+
+image:topo01-neighbor-02.png[]
+
+
+[source,sh]
+----
+# En R1 
+interface fa0/0
+ip hello-interval eigrp 1 300 # <1>
+----
+<1> Del mismo modo, esta en segundos 
+
+image:topo01-neighbor-03.png[]
+
+En comparación con OSPF, en EIGRP no se pierde la adyacencia al cambiar estos
+valores.
+
+Para el siguiente _feature_ limpiamos las configuraciones de este _feature_.
+
+[source,sh]
+----
+no ip hold-time eigrp 1 3600
+no ip hello-interval eigrp 1 300
+
+# Volvemos a generar la tabla de vecinos
+clear ip eigrp neighbors
+----
+
+=== Summarization
+
+Nos sirve para ver todos los segmentos conocidos sin la "sumarización" (resumen)
+
+image:topo02.png[]
+
+.Observaciones
+* R1 esta "declarando" que conocer a 
+** 172.16.0.0/24
+** 172.16.0.1/24
+** 192.168.12.0/24
+* Sin embargo, al revisar en R2 la tabla de vecinos solo observamos:
+** 172.16.0.0/16
+
+El problema es que estamos utilizando ips sin clase
+
+[source,sh]
+----
+# En R1
+router eigrp 1 
+no auto-summary
+----
+
+En R2
+
+[source,sh]
+sh ip route 
+
+image:topo02-neighbor.png[]
+
+También verificar en **R3**.
+
+
+=== Authentification
+
+Similar a como lo haciamos en OSPF. 
+
+Tenemos 2 tipos de autentificación
+
+* MD5
+* SHA (Después del IOS 15)
+
+image:topo03.png[]
+
+Seguimos con la configuración de **auto-summary**
+
+[source,sh]
+----
+# En R1
+key-chain R1
+key 1 
+key-string  cisco123
+
+# En R2
+debug eigrp packet 
+
+# En R1 
+# Aplicamos la llave sobre la interfaz física
+interface fa0/0
+ip authentification-mode eigrp 1 md5 
+ip authentification key-chain eigrp 1 R1
+
+# Observamos se pierde la adyacencia
+
+# En R2
+key chain R2 
+key 1
+key-string cisco123
+interface fa0/0
+ip authentification-mode eigrp 1 md5
+ip authentification key-chain eigrp 1 R2
+----
