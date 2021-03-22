@@ -149,7 +149,7 @@ Seguimos con la configuración de **auto-summary**
 [source,sh]
 ----
 # En R1
-key-chain R1
+key chain R1
 key 1 
 key-string  cisco123
 
@@ -159,7 +159,7 @@ debug eigrp packet
 # En R1 
 # Aplicamos la llave sobre la interfaz física
 interface fa0/0
-ip authentification-mode eigrp 1 md5 
+ip authentification mode eigrp 1 md5 
 ip authentification key-chain eigrp 1 R1
 
 # Observamos se pierde la adyacencia
@@ -169,6 +169,6 @@ key chain R2
 key 1
 key-string cisco123
 interface fa0/0
-ip authentification-mode eigrp 1 md5
+ip authentification mode eigrp 1 md5
 ip authentification key-chain eigrp 1 R2
 ----
