@@ -227,8 +227,8 @@ Lo primero que haremos será configurar la *rruta estática por defecto*
 
 
 [source,sh]
-# En R6
 ----
+# En R6
 ip route 192.168.10.0 255.255.255.0 192.168.9.2
 ip route 192.168.11.0 255.255.255.0 192.168.9.2
 # En R5
