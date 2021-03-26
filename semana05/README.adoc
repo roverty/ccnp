@@ -190,7 +190,7 @@ distribute-list prefix FILTER-R1 in #<1>
 
 image:r2-tabla.png[]
 
-=== Redistribución
+== Redistribución
 
 image:redist-top.png[width=900]
 image:redist-top-parte02.png[width=884]
