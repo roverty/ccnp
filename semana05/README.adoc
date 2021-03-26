@@ -1,0 +1,302 @@
+= Semana 5
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 07.03.2021
+:description: Semana 5 del curso de CCNP
+//:keywords: 
+:sectnums: 
+// Configuracion de la tabla de contenidos
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+
+// Ruta base de las imagenes
+:imagesdir: ./README.assets/ 
+
+// Resaltar sintaxis
+:source-highlighter: pygments
+
+// Iconos para entorno local
+ifndef::env-github[:icons: font]
+
+// Iconos para entorno github
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 5 del curso de Cisco CNNP
+
+toc::[]
+
+== EIGRP Features 
+
+=== Mecanismo de STUB
+
+Para redes que ya no van a crecer más 
+
+* Receive only: recibe pero no advierte 
+* Connected: Advierte redes conectadas directamente
+* Static: Advierte redes estáticas
+* Summary: Advierte redes sumarizadas
+* Redistribuite: Advierte redes redistribuidas
+
+image::eigrp-stub.png[]
+
+Se configura de manera arbitraria en *R1*
+
+==== Receive only 
+
+[source,sh]
+----
+router eigrp 1 
+eigrp stub receive-only
+----
+
+Obervaremos en R3, que ahora la tabla de enrutamiento queda de la siguiente
+manera: 
+
+image::r3-tabla-stub.png[]
+
+Como se observa, los segmentos conocidos por R1 ya no están. Esto es útil cuando
+por cuestiones de seguidad las queremos _esconder_.
+
+Como siguiente paso quitamos en R1 la configuración de stub 
+
+[source,sh]
+router eigrp 1
+no eigrp stub receive-only 
+
+==== Connected 
+
+Ahora, en R2:
+
+[source,sh]
+router eigrp 1
+eigrp stub connected
+
+La tabla de enrutamiento en R3 se vera de la siguiente forma 
+
+image:r3-tabla-stub-connected.png[]
+
+Al tener el modo _connected_ observamos que R2 solo comparte las redes que estan
+conectadas directamente y esa es la razón por la que en R3 solo se aprecian los
+segmentos 12 y 13 como se ve en la imagen.
+
+[source,sh]
+router eigrp 1
+no eigrp stub receive-only 
+
+==== Static 
+
+[source,sh]
+----
+router eigrp 1
+eigrp stub static 
+----
+
+En esta topología no tenemos enrutamiento estático. Solo es estan advirtiendo
+las redes estáticas y las que están conectadas directamente. 
+
+_Revisar las tablas de enrutamiento en cada router_
+
+Para demostrar mejor este concepto haremos lo siguiente:
+
+[source,sh]
+----
+# En R3
+interface lo 1
+ip address 172.16.33.3 255.255.255.0
+no shutdown
+
+# En R2
+ip route 172.16.33.0 255.255.255.0 192.168.23.2 
+router eigrp 1
+redistribute static
+----
+
+En R1 
+
+[source,sh]
+sh ip route 
+
+image::r1-tabla-stub-static.png[]
+
+_¿Qué pasa en R3?_ No observamos las loopbacks de R1, porque del mismo modo
+necesitamos rutas estáticas.
+
+Ahora vamos a limpiar todo 
+
+[source,sh]
+----
+# En R2
+no redistribute static
+no eigrp stub static
+----
+
+==== Sumary 
+
+En R1 
+
+[source,sh]
+----
+router eigrp 1
+eigrp stub summary
+
+interface fa0/0
+ip summary-address eigrp 1 172.16.0.0 255.255.254.0 #<1>
+----
+<1> A continuación se explica la razón de poner dicha máscara.
+
+image:mascara.png[]
+
+Los primeros 23 bits son iguales, si pasamos eso a decimal obtenemos el 254 que
+se puso en la configuración.
+
+
+En R3
+[source,sh]
+sh ip route
+
+image:r3-tabla-stub-summary.png[]
+
+=== EIGRP Prefix_List
+
+Nos sirve para denegar segmentos de reds que no se quieran dar a conocer por
+eigrp.
+
+[source,sh]
+no ip summary-address eigrp 1 172.16.0..0 255.255.254.0
+no eigrp stub summary
+
+Con esto deberíamos tener la tabla de enrutamiento completa
+
+Se denegara la loopback 172.16.1.0 para que no se vea en R2
+
+[source,sh]
+----
+ip prefix-list FILTER-R1 seq 5 deny 172.16.1.0/24
+ip prefix-list FILTER-R1 seq 10 0.0.0/0 le 32
+router eigrp 1
+distribute-list prefix FILTER-R1 in #<1>
+----
+<1> Oculta segmentos de red.
+
+[NOTE]
+*Distribución*: se refiere a ocultar segmentos de red
+
+image:r2-tabla.png[]
+
+=== Redistribución
+
+image:redist-top.png[width=900]
+image:redist-top-parte02.png[width=884]
+
+El objetivo es observar como *comunicar los distintos protocolos*.
+
+Antes de iniciar recordar realizar todas las configuraciones adecuadas, como
+poner las ips y configurar los enrutamientos de manera individual.
+
+A continuación se muestran las configuraciones de algunos routers.
+
+En R2:
+
+image:dist-r2.png[]
+
+En R1:
+
+image:dist-r1.png[]
+
+En R6:
+
+image:dist-r6.png[]
+
+Efectivamente no podemos hacer ping entre distintas redes porque estoy
+utilizando distintos protocolos de enrutamiento.
+
+Vamos a necesitar un traductor que nos ayude a traducir las métricas de cada
+protocolo de enrutamiento.
+
+_Necesitamos routers traductores_. Serán aquellos que hablan más de un
+protocolo.
+
+Lo primero que haremos será configurar la *rruta estática por defecto*
+
+
+[source,sh]
+# En R6
+----
+ip route 192.168.10.0 255.255.255.0 192.168.9.2
+ip route 192.168.11.0 255.255.255.0 192.168.9.2
+# En R5
+ip route 0.0.0.0 0.0.0.0 192.168.9.1
+----
+
+Ahora vamos con la distribución.
+
+[source,sh]
+----
+# En R2
+router eigrp 1
+redistribute ospf 1 metric  1 1 1 1 1
+exit
+router ospf 1
+redistribute eigrp 1 metric 100     #<1>
+
+# En R4
+router rip
+redistribute eigrp 2 metric 1
+exit
+router eigrp 
+redistribute rip metric 1 1 1 1 1
+
+# En R6
+router ospf 1
+redistribute rip metric 100 #<2>
+redistribute static
+exit
+router rip
+redistribute ospf 1 metric 1
+redistribute static
+
+----
+<1> Para redes con clase nos saldrá un _warning_ que inidica que no se puede
+<2> OSPF puede calcular la metrica si no se la indico
+
+Ahora, _¿Qué pasa con la tabla de enrutamiento?_
+
+En *R3*
+
+[source,sh]
+sh ip route
+
+image:redis-r3-tabla.png[]
+
+.Observaciones
+* Todas las redes del router 3 se conocen por RIP 
+* 120 es siempre la distancia administrativa
+* La métrica es 1, el administrador elige el número de saltos.
+
+
+En *R1*
+
+[source,sh]
+sh ip route
+
+image:redis-r1-tabla.png[]
+
+[source,sh]
+sh ip ospf database
+
+image:redis-r1-tabla.png[]
+
+Aparecen link states de tipo 5, que se utilizan para la redistribución.
+
+*¿Por qué no aparece un R* para la ruta estática por defecto?*
+
+R* sucede cuando ingresamos el comando `default-information originate` que nos
+permite propagar la ruta estática, en este caso, todo se propago me dio del
+enrutamiento correspondiente (rip, eigrp u ospf)
