@@ -4,6 +4,8 @@
 recursos/
 project-files/
 
+*.bkp
+
 ### LaTeX ###
 ## Core latex/pdflatex auxiliary files:
 *.aux
