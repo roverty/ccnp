@@ -179,7 +179,7 @@ Se denegara la loopback 172.16.1.0 para que no se vea en R2
 [source,sh]
 ----
 ip prefix-list FILTER-R1 seq 5 deny 172.16.1.0/24
-ip prefix-list FILTER-R1 seq 10 0.0.0/0 le 32
+ip prefix-list FILTER-R1 seq 10 permit 0.0.0/0 le 32
 router eigrp 1
 distribute-list prefix FILTER-R1 in #<1>
 ----
@@ -250,7 +250,7 @@ redistribute eigrp 1 metric 100     #<1>
 router rip
 redistribute eigrp 2 metric 1
 exit
-router eigrp 
+router eigrp 2
 redistribute rip metric 1 1 1 1 1
 
 # En R6
