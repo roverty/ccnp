@@ -1,0 +1,205 @@
+= Semana 6
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 07.06.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 6 del curso de Cisco CNNP
+
+toc::[]
+
+[NOTE]
+====
+*Diferencias entre redes LAN y WAN*
+
+* LAN:  
+** 802.3 (Ethernet)
+* WAN:  
+** 802.3 (Ethernet)
+** Se utiliza el cable serial (por defecto se crea una red WAN) 
+====
+
+.Encapsulaciones para redes WAN
+* PPP
+* HDLC
+* Frame Relay (deprecated y retirado de la industria)
+
+ Se analizará las diferencias entre PPP y HDLC para las redes WAN.
+
+== PPP (Potocol Point to Point)
+
+=== PPP Multilink
+
+Es similar a la configuración _etherchannel_ en donde se juntaban varias
+interfaces para aumentar la velocidad de la conexión. Aquí se combinarán varias
+*interfaces seriales*
+
+
+[source,sh]
+----
+sh interface se0/0
+----
+
+Por defecto viene configurada como *HDLC*.
+
+image:sh-interface.png[]
+
+*Habilitaremos la configuración PPP* para la siguiente topología.
+
+image:top-01.png[]
+
+Cabe  destacar que en este caso `packet-tracer` no soporta los comandos de GNS3.
+
+[source,sh]
+----
+interface multilink X #<1>
+ip address {IP} {MASK}
+ppp multilink
+ppp multilink group X
+exit
+
+interface se0/0/0
+encapsulation ppp
+ppp multilink
+pp multilink group X
+no shutdown
+exit
+
+interface se0/0/1
+encapsulation ppp
+ppp multilink
+ppp multilink group 1
+no shutdown
+
+----
+<1> Donde X es el numéro de grupo
+
+Los siguientes comandos pueden son simplemente para comprobar y pueden
+ejecutarse en el router que sea. 
+
+
+[source,]
+----
+sh ip interface brief
+----
+
+image:sh-interface-brief.png[]
+
+[source,]
+----
+sh ip interface se0/0/0
+----
+
+image:sh-interface-02.png[]
+
+[source,]
+----
+sh ip interfaces multilink 1
+----
+
+image:sh-ppp.png[]
+
+=== Autenticación
+
+.Tenemos 2 formas de autentificarnos:
+* PAP
+* CHAP
+
+==== PAP
+
+La información viaja en texto plano.
+
+Ambos routers tienen que tener _usuario_ y _contraseña_ del router con el que se
+quiere establecer comunicación.
+
+image:pap.png[]
+
+===== Topología
+
+image:pap-top.png[]
+
+Para el router R1
+
+[source,sh]
+----
+hostname R1
+username R2 pass cisco123
+interface se0/0/0
+encapsulation ppp
+ip address {IP} {MASK}
+ppp authentication pap
+ppp pap sent-username R1 pass rodrigo123
+no shutdown
+
+----
+
+Para el router R2
+
+[source,sh]
+----
+hostname R2
+username R1 pass rodrigo123
+interface se0/0/0
+encapsulation ppp
+ip address {IP} {MASK}
+ppp authentication pap
+ppp pap sent-username R2 pass cisco123
+no shutdown
+
+----
+
+==== CHAP
+
+.Hacen 3 way handshake
+* R1 pregunta: ¿Quién es?
+* R2 envía la transformada hash
+* R1 responde con la misma función hash
+* Si son las mismas se inician la comunicación
+
+image:chap.png[]
+
+===== Topología
+
+image:chap-top.png[]
+
+Para el router R1
+
+[source,sh]
+----
+hostname R1
+username R2 pass cisco
+interface se0/0/0
+encapsulation ppp
+ip address {IP} {MASK}
+ppp authentication chap
+no shutdown
+
+----
+
+Para el router R2
+
+[source,sh]
+----
+hostname R2
+username R1 pass cisco
+interface se0/0/0
+encapsulation ppp
+ip address {IP} {MASK}
+ppp authentication chap
+no shutdown
+
+----
+
