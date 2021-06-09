@@ -203,3 +203,134 @@ no shutdown
 
 ----
 
+== Servidor Radius y TACACS
+
+RADIUS :: 
+UDP
+_puerto_: 1812 +
+Es más general
+TACACS :: 
+TCP
+_puerto_: 49 +
+Servidor privado de la marca CISCO
+
+
+*Autenticación utilizando Radius*
+
+image:radius.png[]
+
+El router nunca autentifica. En lugar de eso delega la tarea al servidor.
+En este caso, el usuario y el servidor RADIUS interactúan directamente para
+generar los mecanismos para auntentificarse.
+
+image:radius-02.png[]
+
+[source,sh]
+----
+aaa new model
+aaa authentication login default local
+aaa authentication login default group tacacs+
+aaa authentication login default group radius
+
+----
+
+*Autenticación utilizando TACACS*
+
+image:tacacs.png[]
+
+La principal diferencia es que aquí el usuario interactua con el router. Esto
+se hace media un conexión "telnet" o "ssh". Se crea un socket y mediante este se
+interactúa con el servidor TACACS.
+
+image:tacacs-02.png[]
+
+[source,sh]
+----
+radius-server host IP
+radius-server key XXXX
+tacacs-server host IP
+tacacs-server key XXXX
+
+----
+
+*Para la siguiente topología se configuran los servidores RADIUS y TACACS.*
+
+image:top-radius-tacacs.png[]
+
+No olvidar asignar las direcciones IP correspondientes.
+
+[source,sh]
+----
+hostname R2
+username admin pass admin
+conf t
+line vty 0 15
+login local #<1>
+exit
+
+aaa model
+aaa new-model
+aaa authentication login default group tacacs+
+exit
+aaa new-model
+aaa authentication login default group radius group tacacs+ local
+exit
+
+radius-server host 192.168.100.251
+radius-server key cisco
+
+tacacs-server host 192.168.100.250
+tacacs-server key cisco
+
+----
+<1> Hasta aquí ya tendremos la autentificción local 
+
+*Ahora debemos configurar el servidor RADIUS.*
+
+1. Network Configuration
+
+image:server-radius.png[]
+
+NOTAS::
+No olvidar dar click en agregar. +
+Como nota podemos observar que puerto que aparece es _1645_, ya que antes ese
+era el puerto que se ocupaba pero se cambio a _1812_.
+
+2. User Setup
+
+image:server-radius-02.png[]
+
+No olvidar dar click en agregar.
+
+*Ahora configuraremos el servidor TACACS*
+
+1. Network Configuration
+
+image:server-tacacs.png[]
+
+2. User Setup
+
+image:server-tacacs-02.png[]
+
+*Por último, vamos a probar las configuraciones*.
+
+1. Nos vamos a PC1 nos conectamos al servidor vía telnet
+
+[source,sh]
+----
+telnet 192.168.100.254
+
+# Troubleshoting
+# En el router:
+wr
+reload
+
+----
+
+image:success.png[]
+
+Para comprobar las demás conexiones se puede desconectar de manera manual el
+servidor "RADIUS" y de esa manera tendría que autentificarnos por "TACACS" y si
+desconectamos el "TACACS" nos debería auntetificar vía local.
+
+image:success-tacacs.png[]
