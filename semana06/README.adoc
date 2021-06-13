@@ -74,7 +74,7 @@ exit
 interface se0/0/0
 encapsulation ppp
 ppp multilink
-pp multilink group X
+ppp multilink group X
 no shutdown
 exit
 
@@ -107,7 +107,7 @@ image:sh-interface-02.png[]
 
 [source,]
 ----
-sh ip interfaces multilink 1
+sh interfaces multilink 1
 ----
 
 image:sh-ppp.png[]
@@ -268,8 +268,6 @@ line vty 0 15
 login local #<1>
 exit
 
-aaa model
-aaa new-model
 aaa authentication login default group tacacs+
 exit
 aaa new-model
