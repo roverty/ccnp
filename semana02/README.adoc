@@ -38,7 +38,7 @@ toc::[]
 ====
 Las 2 direcciones ip multicast que utiliza OSPF son: 
 
-225.0.0.5 :: Para todos los routers
+224.0.0.5 :: Para todos los routers
 224.0.0.6 :: Para todos los DR/BDR (router designado/router designado de backup)
 
 //-
