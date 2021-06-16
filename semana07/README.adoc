@@ -1,0 +1,222 @@
+= Semana 7
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 07.06.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 7 del curso de Cisco CNNP
+
+toc::[]
+
+== Servidor RADIUS para redes inálambricas
+
+Vamos a implementar seguridad para conexiones inálambricas por medio de el
+servidor RADIUS. Por lo tanto, al querer auntentificarse para ingresar a nuestra
+red se debe de loggear con las credenciales propocionadas por RADIUS.
+
+[NOTE]
+====
+El protocolo de conexiones inálambricas es el 802.11
+====
+
+=== Topología
+
+image::top-01.png[]
+
+No olvidar configurar el servidor DNS - WEB apropiadamente::
+Empezamos a configurar el router inálambrico.::
+. Se configura la seccion de _Setup_
+image:router-inalambrico.png[]
+image:router-inalambrico-02.png[]
+. Ahora configuramos la seccion de _wireless_
+image:router-inalambrico-04.png[]
+Ahora debemos configurar el servidor RADIUS::
+
+image:radius.png[]
+
+image:radius-02.png[]
+
+Ahora debemos hacer que la laptop se conecte al router inálambrico::
+. Para ello debemos instalar la tarjeta de red en nuestra laptop.
+image:laptop.png[]
+. En las opciones de la laptop escogemos "PC Wireless" y creamos un nuevo
+perfil.
+image:laptop-02.png[]
+. Nos preguntará a que red nos queremos conectar y llenamos el formulario con
+los parámetros previamente configurados. + 
+image:laptop-03.png[]
+image:laptop-04.png[]
+image:laptop-05.png[]
+image:laptop-06.png[]
+image:laptop-07.png[]
+image:laptop-08.png[]
+image:laptop-09.png[]
+. Observamos que la conexión fue exitosa al recibir una dirección IP +
+image:laptop-10.png[]
+
+En la vida real se suele encontrar este tipo de auntentificación en restaurantes
+u hoteles.
+
+== VTP (VLAN Trun Protocol)
+
+Se utiliza para tener una mejor administración de VLANs. Para no ir de switch en
+switch creando las VLANs. Además implica una capa más de seguridad.
+
+Hay 3 modos para las VLANs
+
+SERVER::
+. Crea VLANs
+. Borra VLANs
+. Almacena VLANs
+. Propaga VLANs
+TRANSPARENT::
+. Crea VLANs
+. Borra VLANs
+. Almacena VLANs
+. Propaga VLANs del server a los clientes
+CLIENT::
+. No puede crear VLANs
+. Solo propaga VLANs
+
+[NOTE]
+Para los switches CISCO vienen por defecto en modo SERVER.
+
+Comandos para configurar VTP versión 2
+
+[source,sh]
+----
+vtp mode XXXX
+vtp domain YYYY #<1> 
+vtp password ZZZZ
+----
+<1> Debe de coincidir en todos los switches
+
+Comandos para verificar VTP
+
+[source,sh]
+----
+show vtp status
+----
+
+=== Topología
+
+image::switch.png[]
+
+Antes de iniciar se debe configurar las interfaces para que se encuentren en
+modo TRUNCAL.
+
+image::switch-02.png[]
+
+[source,]
+----
+sh vlan brief
+----
+
+image::switch-03.png[]
+
+Aquí podemos ver que el servidor esta trabajando en modo SERVER.
+
+Configurar los modos según corresponda con los comandos de arriba.
+
+[source,sh]
+----
+vtp mode server
+vtp domain cisco
+vtp password cisco
+
+# Verificando las configuraciones
+sh vtp status
+sh vtp password
+----
+
+Ahora, crearemos vlans en el switch SERVER::
+
+[source,]
+----
+vlan 10
+vlan 50
+vlan 60
+
+do sh vlan brief
+do sh vtp status #<1>
+----
+<1> Veremos que el número de configuración de revisión ahora es 3, porque
+creamos 3 VLANs. Cada comando que modifique un VLANs hará que este contador se
+incremente.
+
+Por otra parte, se puede observar que el switch TRANSPARENT propaga VLANs.
+
+Para ello revisamos la configuración de VLANs en el servidor y en el cliente.
+
+image::switch-04.png[]
+
+También cabe destacar que, en el cliente y en el server siempre tendrán el mismo
+número de revisión ya que se propaga del servidor al cliente por medio del
+TRANSPARENT.
+
+Por otra parte, si se compara el switch SERVER, con el TRANSPARENT, se observa
+que los números son diferentes.
+
+image::switch-05.png[]
+
+_De hecho una característica de switch TRANSPARENT es que no incrementa el
+número de revisión por lo que **siempre se mantendrá en cero**_
+
+image::switch-06.png[]
+
+En la siguiente imagen se observa que las VLANs creadas por el switch
+TRANSPARENT no son propagadas.
+
+image::switch-07.png[]
+
+Desventajas de  VTP::
+Si a la red llega  otro switch con el mismo _dominio_ y _contraseña_ pero con
+distinto  *número de revisión de configuración* se BORRA toda la configuración y
+se pone la configuración del nuevo switch.
+
+[NOTE]
+====
+EN VTP versión 2 no se permite el uso de _VLANs_ extendidas.
+Cabe destacar también que ya existe VTP versión 3, actualmente no soportado por
+packet tracer
+====
+
+=== ¡Cuidado!
+
+Se debe tener especial cuidado a la hora de configurar los switches servidores,
+ya que podría suceder el siguiente caso:
+
+image::switch-08.png[]
+
+Observaciones::
+. El servidor Instruso se encuentra en modo SERVER
+. Si el *número de revisión de configuración* del intruso rebasa al del SERVER
+entonces las configuraciones del SERVER se perderan como se muestra a
+continuación.
+
+Antes
+
+image::switch-09.png[]
+
+Después
+
+image::switch-10.png[]
+
+Esta situación podría llegar a ocurrir especialmente si un empleado nuevo quiere
+configurar los switch sin tener en cuenta VTP y las características con las que
+cuenta la red.
+
+
