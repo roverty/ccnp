@@ -42,6 +42,7 @@ Empezamos a configurar el router inálambrico.::
 image:router-inalambrico.png[]
 image:router-inalambrico-02.png[]
 . Ahora configuramos la seccion de _wireless_
+image:router-inalambrico-03.png[]
 image:router-inalambrico-04.png[]
 Ahora debemos configurar el servidor RADIUS::
 
