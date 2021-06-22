@@ -1,0 +1,254 @@
+= Semana 8
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 21.06.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 8 del curso de Cisco CNNP
+
+toc::[]
+
+== BGP (Border Gateway Protocol)
+
+Es un *protocolo de enrutamiento dinámico*
+
+Features::
+. _D. A. = 200 y 20_
+. _Métrica (no hay)_
+. _La adyacencia se hace manual y se maneja por medio de sistemas autónomos._
+. Tiene mucho parecido con EIGRP
+. Se utiliza en empresas grandes, que comunican topologías grandes, con otras
+topologías grandes. Se engloba todo la topologías interno en un sistema
+autónomos de BGP. Se conectan por medio de la nube.
+. Podemos comunicar servidores entre países por medio de BGP y de esta manera
+hacer troubleshoting
+
+=== Topología
+
+Imaginemos que en la siguiente topología existen topología más grande de las que
+se estan presentando aquí.
+
+image::topologia.png[]
+
+A continuación se mencionan las configuraciones que se deben hacer antes de
+comenzar con BGP.
+
+image::r1.png[]
+image::r2.png[]
+image::r3.png[]
+image::r4.png[]
+image::r5.png[]
+
+Cada topologia se engloba en un sistema autónomo. Para de México quedará como la
+100 y para la de USA quedará como 200. _Pueden ser los números que sean_.
+
+*De manera general los comandos son:*
+
+[source,sh]
+----
+router bgp X
+neighbor {IP-address} remote-as Y #<1>
+# Debemos anunciar los segmentos de red.
+# Pero solo lo hace el router que tiene conectado un cable hacia el otro sistema
+# autonomo
+network X.X.X.X mas Y.Y.Y.Y
+----
+<1> La podemos entender como la IP del siguiente salto, de tal manera que nos
+permita conocer todos los segmentos.
+
+*Para esta topología se tiene*
+
+[source,sh]
+----
+# En R3
+router bgp 100
+neighbor 192.168.3.2 remote-as 200
+neighbor 192.168.2.1 remote-as 100
+neighbor 192.168.1.1 remote-as 100
+
+# En R2
+router bgp 100
+neighbor 192.168.2.2 remote-as 100
+neighbor 192.168.1.1 remote-as 100
+
+# En R1
+router bgp 100
+neighbor 192.168.1.2 remote-as 100
+neighbor 192.168.2.2 remote-as 100
+
+# En R4
+router bgp 200
+neighbor 192.168.3.1 remote-as 100
+neighbor 192.168.4.2 remote-as 200
+
+# En R5
+router bgp 200
+neighbor 192.168.4.1 remote-as 200
+
+
+#####
+# En R3
+network 192.168.3.0 mask 255.255.255.0 #<1>
+network 3.3.3.3 mask 255.255.255.255
+network 2.2.2.2 mask 255.255.255.255
+network 1.1.1.1 mask 255.255.255.255
+network 192.168.2.0 mask 255.255.255.0
+network 192.168.1.0 mask 255.255.255.0
+
+# En R4
+network 192.168.4.0 mask 255.255.255.0
+network 192.168.3.0 mask 255.255.255.0
+network 4.4.4.4 mask 255.255.255.255
+network 5.5.5.5 mask 255.255.255.255
+
+----
+<1> Aquí van los segmentos de red que quiero que se propagen.
+
+Ahora la tabla de de enrutamiento de R3 queda de la siguiente manera:
+
+image::r3-route-nueva.png[]
+
+.Observaciones
+* Se marca con una letra *B* aquello que se ha conocido por medio de BGP.
+* La distancia administativa de _20_ representa la distancia "interna", es
+decir, la distancia que hay por estar entre los routers que hacen la conexión
+directa.
+
+Al mostrar la tabla de enrutamiento para R1, se mostrará una distancia
+administativa de _200_
+
+image::r1-route-nueva.png[]
+
+== Root Guard
+
+image::root-guard.png[]
+
+[NOTE]
+====
+* STP es para que no hay bucles en la red.
+* Por defecto se encuentra corriendo el algoritmo de per spanning tree protocol.
+* El costo en switching ayuda a decidir por que camino se irse para llegar al
+* switch raíz.
+* El costo por defecto es de 19
+* BID o switch identifier 32768, por defecto
+* El último criterio de desempate es por medio de la MAC
+
+Comandos básicos
+
+[source,sh]
+----
+show spanning-tree
+
+# Configurando S0 como switch raíz
+# spanning-tree vlan 10 priority N #<1>
+spanning-tree vlan 10 root primary #<2>
+spanning-tree vlan 20 root primary
+----
+<1> Opción 2
+<2> Opción 1
+
+====
+
+Si no se activa _root guard_ se puede cambiar el switch raíz. De esta manera,
+cualquier otro que quiera ser switch raíz será bloqueado.
+
+[source,sh]
+----
+#interface range fa0/X-X
+interface range fa0/1-2
+spanning-tree guard root
+
+----
+
+Si se quiere cambiar de switch raíz no debería de haber negociación por parte de
+los switches, los LEDs deberán mantener su color.
+
+[source,sh]
+----
+#Los siguientes comandos no deberan funcionar
+spanning-tree vlan 10 priority 0
+spanning-tree vlan 20 priority 0
+
+----
+
+Por otra parte, en los logs del switch S0 deberíamos ver lo siguiente.
+
+image::log.png[]
+
+También se observa en la tabla de spanning-tree que el switch core cambio los
+estados de los puertos del switch que intento convertirse en switch raíz.
+
+
+image::log-02.png[]
+
+Ahora el ping ya no debería llegar, porque las interfaces están en listening.
+
+La idea es estar monitoreando los logs, por medio del servidor syslog.
+
+¿Cómo volvemos del estado de incosistencia?
+
+[source,sh]
+----
+#Los siguientes comandos no deberan funcionar
+no spanning-tree vlan 10 priority 0
+no spanning-tree vlan 20 priority 0
+----
+
+Al quitarlos se debería recuperar el estado a fowarding.
+
+Este es un feature de seguridad que nos sirve para evitar que se cambie el flujo
+de la información de nuestros switches.
+
+== BPDU GUard
+
+=== Port fast
+
+Se evita que haya spanning tree, por una determinada interfaz. En caso
+contrario, se pasa de estado Fowarding a Blocking.
+
+[source,sh]
+----
+interface fa0/4
+switchport mode access
+spanning-tree portfast #<1>
+----
+<1> Estos seguro de que siempre se conectan dispositivos finales.
+
+Debemos de tener cuidado con el siguiente caso
+
+image:portfast.png[]
+
+.Observaciones
+* El host PC2 no se podrá comunicar con los demás host
+* El switch que tiene portfast no envía BPDUs y por lo tanto no se puede hacer la
+negociación de STP. Por eso no hay comunicación.
+
+=== BPDU Guard
+
+Para solventar el problema anterior se utiliza 
+
+[source,sh]
+----
+interface fa0/4
+spanning-tree bpduguard enable
+# Para bloquear todas las interfaces que se encuentren en portfast
+# Esto es en modo configuración global.
+#spanning-tree portfast bpduguard default
+----
+
+Si las interfaces son mandadas a un estado "error disable" porque se intentó
+conectar un switch a una interfaz en portfast simplemente hay que reiniciar
+dicha interfaz (Apagarla y prenderla)
