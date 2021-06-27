@@ -160,6 +160,8 @@ spanning-tree vlan 20 root primary
 <1> Opción 2
 <2> Opción 1
 
+Para un repaso con mayor detalle de las configuraciones de STP, https://github.com/roverty/ccna/tree/main/modulo02/semana08[Click aquí]
+
 ====
 
 Si no se activa _root guard_ se puede cambiar el switch raíz. De esta manera,
