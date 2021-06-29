@@ -1,0 +1,339 @@
+= Semana 9
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 21.06.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 9 del curso de Cisco CNNP
+
+toc::[]
+
+== Privilegios de usuario
+
+Cuando creamos un usuario, por defecto se crea con el máximo nivel de
+privilegio. 
+
+.Niveles de usuario
+* 0 (No privilegiado)
+** Comandos disponibles (disable, enable, exit, help y logout)
+** Este privilegio no se puede modificar
+* 1 Mode exec (cuando el prompt tiene un `>`)
+** Este privilegio no se puede modificar
+* 2
+** Este privilegio si se puede configurar
+* 15 (Super usuario)
+
+=== Tolopogía
+
+image::privilegios-top.png[]
+
+[NOTE]
+Los comandos que se verán a continuación funcionan para routers y switches.
+
+[source,sh]
+----
+# En R2
+username rodrigo pass 123
+enable pass cisco
+
+line vty 0 5
+login local
+
+# En R1
+telnet 
+
+# En R1
+telnet 192.168.1.2
+sh privilege #<1>
+
+# En R2
+conf t
+username user 5 privilege 5 secret cicso5
+privilege exec level 5 ping
+privilege exec level 5 show privilege
+
+username user 7 privilege 7 secret cicso7
+privilege exec level 7 show running-config
+privilege exec level 7 show configure terminal
+
+username user 9 privilege 9 secret cicso9
+privilege exec level 9 configure terminal
+privilege configure level 9 interface fa0/0
+privilege interface level 9 ip address
+privilege interface level 9 no shutdown
+
+----
+<1> Ver nivel de privilegio
+
+.Privilegios para los usuarios
+* `usuario 5 =` ping
+* `usuario 7 =` show run, conf t
+* `usuario 9 =` interface, ip address, no shutdown
+
+
+Para hacer las pruebas nos conectaremos desde el router 1 con los diferentes
+usuarios que se han creado.
+
+[source,sh]
+----
+# En R1
+telnet 192.168.1.2 #<1>
+sh privilege
+ping 192.168.1.1
+exit
+
+telnet 192.168.1.2 #<2>
+sh privilege # Funciona
+sh run # Solo muestra lo que tiene permitido ver/configurar.
+conf t
+interface fa0/0 # NO funciona
+router rip # No funciona
+
+telnet 192.168.1.2 #<3>
+conf t
+interface fa0/0
+ip address 192.168.200.2 255.255.255.0
+no shutdown
+
+----
+<1> Agregar las credenciales del usuario 5.
+<2> Agregar las credenciales del usuario 7.
+<3> Agregar las credenciales del usuario 9.
+
+[source,sh]
+----
+# En R1
+# Con telnet y el usuario 9
+sh privilege # ¡Funciona!
+sh run # Es un show que muestra más información
+
+----
+
+Lo anterior puede parecer extraño, pero hay que considera que *los privilegios
+se heredan*, es decir, se van propagando de manera "jerárquica".
+
+Podemos crear un contraseña `enable` para nivel.
+
+[source,sh]
+----
+enable secret level 9 pass9
+enable secret level 5 pass5
+enable secret level 7 pass7
+
+# En R1
+telnet 192.168.1.2 # Entrar con usuario 5
+disable
+enable 5
+sh privilege
+
+telnet 192.168.1.2 # Entrar con usuario 5
+disable
+enable 9
+sh privilege # >Tendríamos que ver que ya tenemos privilegios de un nivel 9.
+
+----
+
+=== Vistas
+
+Los privilegios se podrán crear por usuario
+
+Para demostrar esto utilizaremos la misma topología.
+
+image::vistas-top.png[]
+
+.Crearemos las siguientes vistas
+* TESTERVIEW = ping
+* SHOWVIEW = show
+* CONFIGUREVIEW = configure terminal, ip address, no shutdown, interface
+
+Para ello tenemos que estar en un modo, nuevo para nosotros que se llama _modo
+vista_
+
+.Requisitos para trabajar con vistas
+* Crear contraseña de `enable`
+* Habilitar AAA
+
+[source,sh]
+----
+#En R1
+conf t
+enable secret cisco
+aaa new-model
+
+username prueba secret 123
+
+aaa authentication login defaul local
+line vty 0 5
+transport input all
+exit
+
+# Modo vista
+enable view # Meter la contraseña de modo privilegiado.
+show parser view  
+# Nos mostrará que estamos en la vista "root" donde podemos hacer lo que sea
+
+# Creando vistas
+parser view TESTERVIEW
+secret testerview
+# Dando permisos
+commands  exec include ping
+exit
+
+parser view SHOWVIEW
+secret showview
+commands exec include show *
+commands exec include show running-config
+exit
+
+parser view CONFIGUREVIEW
+secret configureview
+commands exec include configure terminal
+commands configure include interface
+commands configure include interface fa0/0
+commands interface ip address
+commands interface no shutdown
+exit
+
+disable
+
+# Para entrar a las vistas
+enable view TESTERVIEW
+sh parser view # Nos muestra que debemos estar en la vista TESTERVIEW
+
+# Incresamos un comando NO permitido y debería fallar
+sh run
+conf t
+
+# Podemos hacer ping
+ping 192.168.1.1
+ping 192.168.1.2
+exit
+
+
+enable view SHOWVIEW
+sh parser view
+
+# El ping debería fallar, porque no se hereda
+ping 192.168.1.1
+
+enable view CONFIGUREVIEW
+configure terminal
+interface fa0/0
+192.168.23.1 255.255.255.0
+no shutdown
+
+----
+
+=== Supervistas
+
+Se pueden incluir otras vistas, por el fin de tener algo similar a la herencia
+de privilegios que se tenían con los privilegios de usuario.
+
+.Para nuestra supervista llamada SUPERVIEW
+* SHOWVIEW
+* TESTERVIEW
+* CONFIGUREVIEW
+
+[source,sh]
+----
+enable view
+conf t
+parser view SUPERVIEW superview
+secret superview
+view TESTERVIEW
+view SHOWVIEW
+view CONFIGUREVIEW
+exit
+
+enable view SUPERVIEW
+ping 192.1681.1
+sh run # No muestra solo la fa0/0
+conf t
+router ospf 1 # No debería funcionar
+interface fa0/0
+ip address 192.168.7.1 255.255.255.0
+no shutdown
+
+----
+
+== Configuraciones de seguridad en conexiones remotas
+
+image::security-top.png[]
+
+[source,sh]
+----
+# En R2
+line vty 0 5
+#exec time-out (min) (seg)
+exec time-out 0 20
+exit
+
+#security password min-length X
+security password min-length 8
+#login block-for X attempts Y within Z
+login block-for 15 attempts 3 within 30 #<1>
+login on-success log
+login on-failure log
+
+# Debería decir que la contraseña es demasiado corta
+username francisco pass cisco 
+username francisco pass 12345678 
+
+# En R1
+telnet 192.168.1.2
+# En R2 nos mandará un log avisando que nos logeamos
+
+show login
+
+----
+<1> Si en 30 segundos me equivoco 3 veces, se bloquea le servicio por 15
+segundos.
+
+Si nos logeamos 3 veces mal se nos deberá mostrar lo siguiente.
+
+image:block-attempts.png[]
+
+También notaremos que en R2 se muestran todos los _logs_ para estar monitoreando
+la seguridad de nuestro router.
+
+image:logs.png[]
+
+`show log`:
+
+image:logs-02.png[]
+
+`show login`:
+
+image:login.png[]
+
+* Normal Mode: Recibe peticiones
+* Quiet Mode: No recibe peticiones, se bloquea porque los intentos fallidos.
+
+También cabe resaltar que podemos estar monitoreando la cantidad  de CPU que
+estamos consumiendo.
+
+[source,]
+----
+sh processes cpu history
+----
+
+image:cpu.png[]
+image:cpu-02.png[]
+
+.Se puede observar que son 3 gráficas
+* En los últimos 60 segundos
+* En los últimos 60 minutos
+* En las últimas 72 horas
