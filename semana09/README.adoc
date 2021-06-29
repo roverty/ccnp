@@ -53,23 +53,20 @@ line vty 0 5
 login local
 
 # En R1
-telnet 
-
-# En R1
 telnet 192.168.1.2
 sh privilege #<1>
 
 # En R2
 conf t
-username user 5 privilege 5 secret cicso5
+username user5 privilege 5 secret cisco5
 privilege exec level 5 ping
 privilege exec level 5 show privilege
 
-username user 7 privilege 7 secret cicso7
+username user7 privilege 7 secret cisco7
 privilege exec level 7 show running-config
-privilege exec level 7 show configure terminal
+privilege exec level 7 configure terminal
 
-username user 9 privilege 9 secret cicso9
+username user9 privilege 9 secret cisco9
 privilege exec level 9 configure terminal
 privilege configure level 9 interface fa0/0
 privilege interface level 9 ip address
@@ -186,6 +183,7 @@ show parser view
 # Nos mostrará que estamos en la vista "root" donde podemos hacer lo que sea
 
 # Creando vistas
+conf t
 parser view TESTERVIEW
 secret testerview
 # Dando permisos
@@ -203,8 +201,8 @@ secret configureview
 commands exec include configure terminal
 commands configure include interface
 commands configure include interface fa0/0
-commands interface ip address
-commands interface no shutdown
+commands interface include ip address
+commands interface include no shutdown
 exit
 
 disable
@@ -277,8 +275,9 @@ image::security-top.png[]
 ----
 # En R2
 line vty 0 5
-#exec time-out (min) (seg)
-exec time-out 0 20
+#exec-timeout (min) (seg)
+exec-timeout 0 20
+login local
 exit
 
 #security password min-length X
