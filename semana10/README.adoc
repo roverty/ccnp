@@ -1,0 +1,258 @@
+= Semana 10
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 05.07.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 10 del curso de Cisco CNNP
+
+toc::[]
+
+== PBR (Policy Based Routing)
+
+image::top.png[]
+
+Observaciones::
+* Se enrutó  con RIP
+* Revisar el ping de R1 a R6
+
+[source,sh]
+----
+# En R1
+traceroute 4.4.4.4 #<1>
+# En R3
+sh interfaces fa0/0
+sh interfaces se0/0
+
+----
+<1> Se va por el camino de la red LAN porque tiene un mayor ancho de banda
+
+//-
+
+El tema de PBR se utilizará ::
+* Si queremos ocupar el camino de la WAN para R1
+** Esto será para paquetes que no requieran tanto ancho de banda, por ejemplo,
+un traceroute
+* Si queremos ocupar el camino de la LAN para R2 será para operaciones que
+requieran un mayor ancho de banda
+
+[source,sh]
+----
+# Paso 1. Crear una lista de control de acceso en R3
+# En R3
+access-list 105 permit ip host 192.168.13.1 host 4.4.4.4
+
+route-map DESTRAFF permit 10 #<1>
+match ip address 105
+set ip next-hop 192.168.35.2
+
+# Aplicar la política
+interface fa0/0 #<2>
+ip policy route-map DESTRAFF
+
+----
+<1> `10` representa simplemente un id
+<2> Es la interfaz que recibe el tráfico que se quiere redirigir.
+
+Para las pruebas:
+
+[source,sh]
+----
+# En R1
+traceroute 4.4.4.4
+# En R2
+traceroute 4.4.4.4
+
+----
+
+== DHCP Snooping
+
+image::dhcp.png[]
+
+Observaciones de la topología ::
+  * Se router "intruso" interará otorgar direccionamiento y puede que algunas
+  veces lo logre.
+  * Lo anterior implica que, como los paquetes se mandan a otro lado entonces
+  eso representa una vulnerabilidad
+
+[source,sh]
+----
+ip dhcp snooping
+ip dhcp snooping vlan 1 #<1>
+#interface range fa0/x-x
+interface range fa0/1-2 #<2>
+ip dhcp snooping trust
+----
+<1> Si solo nos quedamos hasta este comando, el switch detectará que no hay
+interfaces confiables y por lo tanto el DHCP siempre fallará.
+<2> Se declarán como confiables las interfaces 1 y 2
+
+Por seguridad también se puede deshabilitar el DHCP para que no se detecten
+puertos abiertos en nuestra red.
+
+[source,sh]
+----
+no service dhcp
+----
+
+== SNMP
+
+image::dhcp.png[]
+
+Seguimos utilizando la misma topología.
+
+Los comandos para SNMP de manera general son:
+
+[source,sh]
+----
+snmp-server community [NAME] RO
+snmp-server community [NAME] RW
+----
+
+Para nuestra topología haremos lo siguiente:
+
+[source,sh]
+----
+# En R1 CONFIABLE
+snmp-server community publico RO
+snmp-server community privado RW
+----
+
+== IPS & IDS
+
+IPS::
+* _Sistema preventor de intrusos_
+* Usado para prevenir ataques a nuestra red interna.
+* Se puede encontrar en modo activo o inline (que sonda lo que hay en un
+* interfaz o lo que sale de una interfaz)
+* Tiene cierto parecido con las ACL, sin embargo no hay servidor como tal que
+nos este mandando feedback
+
+IRS::
+* _Sistema detector de intrusos_
+* NO puede detener per detecta amanazas
+* Tenemos 2 tipos de IDS
+** HOST (software, servidor) HIDS
+** RED (configuración del switch) NIDS
+
+=== Topología
+
+image:top-ips-ids.png[]
+
+Observaciones::
+* Comprobar que se pueda hacer `ping`
+* El switch y el router de la izquierda debe ser los modelos que se indican en
+la imagen.
+
+El modelo _1941_ nos va permitir ejecutar ciertos comandos de seguridad.
+
+[source,sh]
+----
+sh version #<1>
+
+# Para agregar los paquetes de seguridad se ejecuta lo siguiente
+license boot module c1900 technology-package securityk9
+# Se aceptan los términos de la licencia.
+wr # Guardamos
+
+----
+<1> En la última parte nos nuestra los apartados relacionados con la seguridad.
+
+
+[source,sh]
+----
+mkdir ipsdir
+dir flash
+cont t
+# Establecemos la carpeta que creamos con el directorio raíz de nuestro IPS
+ip ips config location ipsdir
+
+----
+
+Ahora debemos activar las _categorías_ con las que nos interesa trabajar con el
+IPS.
+
+[source,sh]
+----
+ip ips signature-category
+category all
+retired true
+exit
+category ios_ips basic
+retired false
+exit
+exit
+----
+
+Después se crea una regla que le va a aplicar a las interfaces
+
+[source,sh]
+----
+ip ips name iosips
+interface gi0/0 #<1>
+ip ips iosips out
+signature 2004 0 #<2>
+status
+retired false
+enabled true
+exit
+----
+<1> Para el caso de nuestra topología
+<2> Con esto le estamos diciendo que vamos a bloquear el ping (ICMP)
+
+image::icmp.png[]
+
+Ahora, debemos indicar que se debe hacer cuando se encuentre un paquete que
+corresponda con esta firma.
+
+[source,]
+----
+engine
+event-action produce-alert
+event-action deny-packet-inline
+exit
+exit
+exit
+
+logging host 192.168.2.253
+----
+
+En el servidor SYSLOG podremos observar lo siguiente.
+
+image::syslog.png[]
+
+Aún se puede acceder al puerto 80, para visualizar la página web.
+
+=== IDS
+
+Deteca el tráfico por medio de un puerto espejo, por medio de un software, por
+ejemplo, _wireshark_
+
+image::ids.png[]
+
+[source,sh]
+----
+#En el switch
+monitor session 1 source interface fa0/1 both
+monitor session 1 source interface fa0/2 both
+monitor session 1 source interface fa0/3 both
+----
+
+Ahora, podemos hacer ping entre la laptop y el servidor WEB del segmento
+192168.1.0/24 y posteriormente abrir el sniffer para observar la interfaz
+gráfica de la siguiente manera:
+
+image:sniffer.png[]
