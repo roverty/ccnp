@@ -126,7 +126,7 @@ image::asa-02.png[]
 ----
 conf t
 interface vlan 2
-ip address 192.168.1.2 255.255.255.0
+ip address 192.168.2.1 255.255.255.0
 exit
 
 interface vlan 1
@@ -151,6 +151,7 @@ exit
 policy-map POLICYMAP
 class CLASE1
 inspect icmp
+exit
 # Se habilita de manera global
 service-policy POLICYMAP global
 ----
