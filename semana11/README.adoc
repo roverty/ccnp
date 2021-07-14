@@ -1,0 +1,471 @@
+= Semana 11
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 12.07.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 11 del curso de Cisco CNNP
+
+toc::[]
+
+== ASA (Adaptative Security Appliance)
+
+Es un *firewall* de CISCO. Lo veremos como un dispositivo físico, en este caso el
+5505.
+
+Es importante tener _firewall_ para tener una mayor seguridad
+
+image::explicacion-01.png[]
+
+Observaciones::
+* Un usuario malicioso podría intentar saltarse el PAT y simplemente llevar de
+manera directa a nuestro dispositivo
+* Se podrían tener ACL, sin embargo, no sería lo más adecuado. Dado que el
+router o switch se encarga de muchas otras cosas. Por ello se designa un
+dispositivo dedicado.
+
+=== Conexiones mediante ASA (topologías)
+
+.Se pueden definir las siguientes topologías
+* Inspector de estados
+* Web VPN
+* Zona DMZ
+
+==== Inspector de estados
+
+image::insp-estados.png[]
+
+* En el ASA vienen definidas varias VLANs, ya que puede interacturar como
+switch, también como router. 
+* Implementa zonas:
+** *Inside*: Lo que esta _dentro_ de nuestra red
+** *Outside*: Lo que esta _afuera_ de nuestra red, hacía internet
+* Niveles de seguridad por defecto:
+** 100 para inside
+** 0 para outside
+
+La idea de los niveles de seguridad es que los paquetes no puedan llegar de un
+menor nivel de seguridad a uno mayor.
+
+==== Web VPN
+
+image::web-vpn.png[]
+
+El ASA permite levantar el protocolo VPN, para comunicar un servidor web con
+nuestros usuario. Esto se hace mediante credenciales.
+
+Si alguien nos intenta atacar estará interacturando con el ASA en lugar de con
+el servidor WEB.
+
+=== Zona DMZ (Zona desmilitarizada)
+
+La zona DMZ es una zona adicional a las que ya se habían mencionado (inside y
+outside).
+
+Esta zona, se recomienda que tenga un nivel de seguridad intermediario entre la
+zona inside y la zona outside. 
+
+También se le conoce como _granga de servidores_, ya que se recomiedna que los
+servidores se encuentren en otro segmento de red y en otra VLAN. La idea es que
+si se ataca una de las 3 zonas, las otras sigan siendo seguras.
+
+image::zona-dmz.png[]
+
+=== Práctica
+
+==== Inspector de estados
+
+image::asa-01.png[]
+
+Observamos que al igual que los routers también tiene un puerto consola (nos
+podemos conectar con _putty_), por que podemos dar doble click para poder entrar
+a la parte de administración.
+
+El ASA puede actuar como _switch_ y como un _router_
+
+[source,sh]
+----
+enable
+# Por default no tiene contraseña, entonces damos ENTER
+
+sh switch vlan
+----
+
+image::vlans.png[]
+
+[source,sh]
+----
+sh run
+# Las demás interfaces se entiende que estan en VLAN 1
+----
+
+image::sh-run.png[]
+
+En este caso la VLAN 1 ya viene con una dirección IP.
+
+Para hacer la conexión se debe recordar que la `ETHERNET0/0` es la interfaz
+*outside* siempre
+
+image::asa-02.png[]
+
+
+[source,tex]
+----
+conf t
+interface vlan 2
+ip address 192.168.1.2 255.255.255.0
+exit
+
+interface vlan 1
+no shutdown
+----
+
+Las configuraciones de cada host son las siguientes:
+
+image::lap-01.png[]
+image::lap-02.png[]
+
+Ahora se debe levantar el *Inspector de estados*
+
+[source,]
+----
+conf t
+# Mapeo de clase
+class-map CLASE1
+match default-inspection-traffic
+exit
+
+policy-map POLICYMAP
+class CLASE1
+inspect icmp
+# Se habilita de manera global
+service-policy POLICYMAP global
+----
+
+==== WEB VPN
+
+image::asa-03.png[]
+
+Configurador del servidor web
+
+image::web-server.png[]
+
+¿Cómo pasamos de un nivel menor a un nivel mayor sin utilizar el inspector de
+estado? _Debemos usar ACLs_
+
+[source,sh]
+----
+access-list 101 permit tcp any any eq 80
+access-list 101 permit tcp any any eq 443
+access-group 101 in interface outside
+# Podemos acceder ahora a la página web
+----
+
+El ASA solo admite el protocolo `HTTPS`
+
+
+[source,sh]
+----
+webvpn
+enable outside
+exit
+
+username admin password admin
+group-policy POLITICA internal
+group-policy POLITICA attributes
+
+wbvpn
+url-list value SITIO
+exit
+
+tunnel-group ACCESO type remote-access
+tunnel-group ACCESO general-attributes
+default-group-policy POLITICA
+username admin attributes
+vpn-group-policy POLITICA
+----
+
+El último paso es configurar un *bookmark* en el ASA, como se muestra en la
+siguiente imagen:
+
+image::bookmark.png[]
+
+Ahora, en laptop 2 podemos ir al navegador y escribir:
+
+image::browser.png[]
+
+Debemos autentificarnos y veremos lo siguiente
+
+image::asa-page.png[]
+
+En este caso le damos click en el bookmark que hemos creado que se llama sitio.
+
+image::success.png[]
+
+Finalmente le podremos dar `logout` para salirnos.
+
+Con esta configuración, normalmente el usuario esperaría que estuviera
+ingresando la dirección IP del servidor, sin embargo no es así, simplemente esta
+ingresando la dirección de Gateway, que esta en la ASA.
+
+Entonces los ataques no se lo harían al servidor web, sino al ASA.
+
+Los WEB VPN se ven en hoteles, usualmente antes de conectarnos a la red nos
+conectamos a una página en donde podemos las credenciales.
+
+==== DMZ (Zona desmilitarizada)
+
+image::dmz.png[]
+
+image::top-dmz.png[]
+
+
+[source,sh]
+----
+interface vlan 3
+nameif DMZ #<1>
+no forward interface vlan 1 
+nameif DMZ
+security-level 50
+exit
+interface Et0/2
+switchport access vlan 3
+exit
+interface vlan 3
+ip address 192.168.3.1 255.255.255.0
+----
+<1> En principio nos marca error pero se puede corregir las instrucciones que
+estan después de esta.
+
+Después de estos comandos, podemos hacer los siguiente
+
+[source,sh]
+----
+sh switch vlan
+----
+
+Y se tiene que ver de la siguiente manera.
+
+image::switch-vlan.png[]
+
+El siguiente paso es hacer un *inspector de estados*
+
+[source,sh]
+----
+conf t
+class-map Inspector_estados
+match default-inspection-traffic
+exit
+policy-map GLOBAL_POLICY
+class Inspector_estados
+inspect icmp
+inspect http
+inspect dns
+service-policy GLOBAL_POLICY gobal #<1>
+----
+<1> De esta manera estará activo para la VLAN 1 y la VLAN 3
+
+Se crea un lista de control de acceso que permita la entrada de tramas de tipo
+TCP y UDP, provenientes de cualquier lugar de internet a través de la interfaz
+*outside*.
+
+[source,sh]
+----
+access-list ACL1 extended permit tcp any any
+access-list ACL1 extended permit udp any any
+access-list ACL1 in interface outside
+----
+
+Ahora debemos general un IP virtual en el ASA para que puedan ver el contenido,
+los usuarios que vengan de fuera
+
+image::ip-virtual.png[]
+
+
+[source,]
+----
+object network OBJ1
+host 192.168.3.10
+nat (DMZ, outside) static 192.168.2.200 #<1>
+----
+<1> (origen, destino), la IP virtual tiene qu eser del segmento outside
+
+No olvidar configurar adecuadamente el DNS y la laptop outside
+
+image::lap-03.png[]
+
+Si nos quisieran atacar, simplemente atacarían la IP virtual y no conocerá la IP
+verdadera
+
+Si el usuario hace `ping` se dará cuenta que no funciona.
+
+Recordemos que esto esta hecho para gestionar una granja de servidores.
+
+== VPN (Virtual Private Network)
+
+.Tenemos 2 tipos
+* *Site to site*
+** Se crea un tunnel y los routers fungen como túneles, se crea
+un túnel entre 2 routers. 
+** No se necesita software, ni usuario, ni contraseña, tampoco llaves.
+* *VPN acceso remoto* 
+** Se debe configurar certificados y credenciales para poder logearse, 
+** además del cifrado. Se necesita un software especial. 
+** _Son las que se utilizan para el home-office_
+
+.Ventajas
+* Es escalable: Puedes meter más memoria para que te soporte mayor número de
+usuarios.
+* Bajo costo: Se puede dar un equipo dedicado para conectarse o se puede
+utilizar una computadora personal y nada más se pasan las credenciales
+* Buena seguridad: Se puede configurar el modelo AAA, certificados digitales,
+etc.
+
+image::vpn-01.png[]
+
+Observaciones::
+* Enrutar por medio de RIP para parte de la izquierda
+* Debemos de lograr que Laptop 1 este "físicamente" en la intranet. Se deben
+poder visualizar lás mismas páginas que los usuarios de la intranet
+* Se debe hacer la configuración del PAT.
+
+Recordemos el el ping de el host de internet a mi intranet debe de fallar por
+defecto. Para que no falle y halla comunicación, necesitamos, precisamente una
+VPN
+
+[source,sh]
+----
+aaa new-model
+aaa authentication login VPNUSER local
+aaa authorization network GroupVPN local
+username vpn secret cisco
+----
+
+image::isakmp.png[]
+
+[source,sh]
+----
+crypto isakmp policy 10
+encryption aes
+authentication pre-share
+group 5 #<1>
+exit
+----
+<1>  Es un grupo de Diffie-Hellman, hablando en términos de criptografía. Las
+llaves siempre van a ser distintas.
+
+[source,sh]
+----
+crypto isakmp client configuration group GroupVPN
+key secreto
+pool POOLVPN
+exit
+----
+
+Crearemos un pool de DHCP
+
+[source,sh]
+----
+ip local pool POOLVPN 192.168.1.1.0 192.168.1.20 #<1>
+----
+<1> Pool para clientes DHCP
+
+image::transfer-set.png[]
+
+[source,sh]
+----
+crypto ipsec transform-set VPNSET esp-aes esp-sha-hmac
+----
+
+Después se establece un mapa dinámico
+
+[source,sh]
+----
+crypto dynamic-map VPNDINAMIC 10
+set transform-set VPNSET
+reverse-route
+----
+
+Ahora definiremos un MAPA ESTÁTICO, se reúnen todas las configuraciones que se
+hicieron previamente.
+
+[source,sh]
+----
+crypto map STATICMAP client authentication list VPNUSER
+crypto map STATICMAP isakmp authorization list GroupVPN
+crypto map STATICMAP client configuration address respond
+crypto map STATICMAP 20 ipsec-isakmp dynamic VPNDINAMIC
+----
+
+Por último, se asigna el mapa estático en una interfaz
+
+[source,sh]
+----
+interface se0/0/0
+crypto map STATICMAP
+----
+
+En resumen, las configuraciones quedan de la siguiente manera.
+
+image::resumen.png[]
+
+Observaciones:: 
+Todo lo que esta en rojo se puede modificar dado que simplemente representa un
+identificador.
+
+Ahora debemos conectarnos a la VPN desde la laptop que está en internet.
+
+image::lap-vpn.png[]
+
+Nos va pedir diversos datos.
+
+image::lap-vpn-02.png[]
+
+Al dar Ok. me da una IP, cerramos la pestaña y verificamos nuestras
+configuraciones de IP.
+
+[source,sh]
+----
+#En el command prompt de la laptop
+ipcofing /all
+----
+
+image::config-ip.png[]
+
+Ahora, el ping de internet a intranet debería ser exitoso.
+
+Podemos tener servidores dedicados que hagan de VPN. En este caso, se puede
+ocupar CentOS, y se puede crear una VPN.
+
+=== OpenVPN
+
+El cliente ni la llave privada se pueden repetir.
+
+image::open-vpn.png[]
+
+=== Software para SNMP
+
+*Check_MK* sirve para monitorear toda nuestra red.
+
+image::check-mk.jpg[]
+
+Otra opción podría ser *Nagios*
+
+image::nagios.jpg[]
+
+Y la última opción para monitorear es *Cati*
+
+image::cati.gif[]
