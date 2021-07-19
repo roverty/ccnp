@@ -1,0 +1,198 @@
+= Semana 12
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 12.07.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 12 del curso de Cisco CCNP
+
+toc::[]
+
+== VoIP
+
+[NOTE]
+====
+Un red convergente es aquella que puede transmitir datos, voz y video
+====
+
+El teléfono va tener un dirección IP.
+
+image::topologia.png[]
+
+Observaciones::
+* Se debe utilizar el router _2811_ ya que soporta las configuraciones para voz
+IP
+* Se debe enrutar por OSPF
+
+Se debe verificar que se tenga bien la configuración de enrutamiento.
+
+image::routing-ospf.png[]
+image::routing-ospf-02.png[]
+
+En el simulador podemos habilitar el _sonido_
+
+image::sound.png[]
+
+Para hacer la conexión de un teléfono análogo con la red se necesita de un
+conmutador. Para conectar el teléfono al conmutador se debe utilizar un clave de
+tipo _phone_, que se ve como un cable de líneas puntadas en el simulador.
+
+image::topologia-02.png[]
+
+Primero necesitamos crear un pool de DHCP para los dos routers
+
+
+[source,sh]
+----
+# En VoIP A
+
+hostname VoIP_A
+interface fa0/1
+ip address 192.168.1.254 255.255.255.0
+no shutdown
+exit
+
+ip dhcp pool RED_VOIP_A
+network 192.168.1.0 255.255.255.0
+default-router 192.168.1.254
+option 150 ip 192.168.1.254 #<1>
+exit
+
+telephony-service
+max-dn 5 #<2>
+max-ephones 5
+ip source-address 192.168.1.254 port 2000
+auto assign 1 to 5
+
+ephone-dn 1
+number 54001
+exit
+ephone-dn 2
+number 54002
+exit
+number 54003
+exit
+----
+<1> La opción `150` habilita la conexión de tftp para descargar la configuración
+que necesitan, si no hay servidor, utiliza configuración del router como en este
+caso.
+<2> Número máximo de teléfonos a configurar. Se puede configurar máximo 144
+
+Por otra parte, para el switch, tenemos que anunciar que tendremos una VLAN de
+voz.
+
+[source,sh]
+----
+# Switch de la izquierda
+conf t
+interface range fa0/1-3
+switchport mode access
+switchport voice vlan 1
+----
+
+*Tenemos que hacer lo mismo en el router de la derecha*
+
+[source,sh]
+----
+# En VoIP B
+
+hostname VoIP_B
+interface fa0/1
+ip address 192.168.3.254 255.255.255.0
+no shutdown
+exit
+
+ip dhcp pool RED_VOIP_B
+network 192.168.3.0 255.255.255.0
+default-router 192.168.3.254
+option 150 ip 192.168.3.254 #<1>
+exit
+
+telephony-service
+max-dn 5 #<2>
+max-ephones 5
+ip source-address 192.168.3.254 port 2000
+auto assign 1 to 5
+
+ephone-dn 1
+number 64001
+exit
+ephone-dn 2
+number 64002
+exit
+number 64003
+exit
+----
+ 
+Y también se debe configurar el switch
+
+[source,sh]
+----
+# Switch de la izquierda
+conf t
+interface range fa0/1-4
+switchport mode access
+switchport voice vlan 1
+----
+
+Para configurar el _conmutador_ nos vamos a su pestaña de configuración
+
+image::conmutador.png[]
+
+Ahora, en la pestaña de GUI del teléfono debemos observar que nos haya asignado
+un número.
+
+También debemos utilizar las configuraciones de DHCP en los host.
+
+Ahora, para el teléfono IP, nos vamos a la pestaña _physical_ y lo conectamos a
+la corriente arrastrando el elemento que tenemos en la parte inferior izquierda.
+
+image::ip-phone.png[]
+
+También podremos hacer llamadas en las computadoras por medio de una
+herramienta de CISCO llamada: Cisco IP Communicator
+
+image::host.png[]
+image::host-02.png[]
+
+Ya que terminamos las configuraciónes procederemos a la sección de pruebas.
+
+Para ello, en el caso de los teléfonos debemos descolgar la bocina y marcar.
+
+image::prueba.png[]
+
+_¿Qué pasa si queremos hacer llamadas a otro segmentos de red?_ Nos rechaza,
+porque se debe hacer un configuración.
+
+[source,sh]
+----
+# EN VoIP_A
+dial-peer voice 1 voip
+destination-pattern 6400. #<1>
+session target ipv4:192.168.2.2
+----
+<1> Hacia que números nos queremos conectar. El punto es similar a poner `*` en
+linux.
+
+[source,sh]
+----
+# EN VoIP_B
+dial-peer voice 1 voip
+destination-pattern 5400.
+session target ipv4:192.168.2.1
+----
+
+Hacemos la llamada una vez más para verificar que ya este funcionando
