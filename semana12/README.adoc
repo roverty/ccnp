@@ -83,6 +83,7 @@ exit
 ephone-dn 2
 number 54002
 exit
+ephone-dn 3
 number 54003
 exit
 ----
@@ -133,6 +134,7 @@ exit
 ephone-dn 2
 number 64002
 exit
+ephone-dn 3
 number 64003
 exit
 ----
