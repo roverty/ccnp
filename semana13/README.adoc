@@ -1,0 +1,78 @@
+= Semana 13
+Creado por Rodrigo Francisco <rhodfra@gmail.com>
+Version 1.0, 12.07.2021
+:sectnums: 
+:toc: 
+:toc-placement!:
+:toclevels: 4                                          
+:toc-title: Contenido
+:imagesdir: ./README.assets/ 
+:source-highlighter: pygments
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+
+Semana 13 del curso de Cisco CCNP
+
+toc::[]
+
+== Topología feedback
+
+=== Capturas
+
+. Protocolo de enrutamiento libre
+. Acceso a R4 por Radius y de manera local
+. Acceso a R2 por Tacacs y Radis
+. Conexión de host a router inalámbrico por medio de Radis
+. Configuración de zona inside, outside y DMZ en ASA
+. Configuración de webVPN para los hosts de outside entre a la página web
+. Acceso mediante VPN en Router2 para host outside
+. Acceso a página web mediante el DNS www.eselfingen21.com aplicando NATeo
+estático con una Ip virtual y colocando es IP como DNS en los hosts.
+. Sevidor syslog funcionando (mandar mensajes desde cualquier dispositivo al
+servidor).
+. Configuración de una IPS en Router 4 denegando el ping
+. Configuración de usuarios y vistas en Router 4:
+.. *usuario3 -> Nivel 3 de privilegios*
+* show running-config
+* show ip route
+* show privilege
+.. *usuario5 -> Nivel 5 de privilegios*
+* ping
+* configure-terminal
+* hostname
+.. *usuario7 -> Nivel 7 de privilegios*
+* configure terminal
+* router rip
+* network (redes para el enrutamiento de rip)
+.. *usuario9 -> Nivel 9 de privilegios*
+* show running-config
+* interface fastethernet
+* ip address
+.. *usuario37 -> Nivel 15 de privilegios*
+*  Todos los comandos del sistema.
+.. *usuario59 -> Nivel 15 de privilegios*
+* Todos los comandos del sistema
+.. *vista 1*
+* configure terminal
+* ip dhcp pool
+* show ip route
+.. *vista 2*
+* clock set
+* sh ip interface brief
+* show clock
+.. *vista 3*
+* show cdp neighbors
+* show version
+* ping
+.. *vista 4*
+* configure terminal
+* logging host
+* loggin trap
+
+=== Conclusión (del curso)
