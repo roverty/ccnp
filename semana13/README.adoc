@@ -1,7 +1,6 @@
 = Semana 13
 Creado por Rodrigo Francisco <rhodfra@gmail.com>
 Version 1.0, 12.07.2021
-:sectnums: 
 :toc: 
 :toc-placement!:
 :toclevels: 4                                          
@@ -22,6 +21,8 @@ Semana 13 del curso de Cisco CCNP
 toc::[]
 
 == Topología feedback
+
+image::feedback.png[]
 
 === Capturas
 
