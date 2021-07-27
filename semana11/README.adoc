@@ -287,7 +287,7 @@ TCP y UDP, provenientes de cualquier lugar de internet a través de la interfaz
 ----
 access-list ACL1 extended permit tcp any any
 access-list ACL1 extended permit udp any any
-access-list ACL1 in interface outside
+access-group ACL1 in interface outside
 ----
 
 Ahora debemos general un IP virtual en el ASA para que puedan ver el contenido,
