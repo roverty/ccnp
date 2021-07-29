@@ -34,10 +34,10 @@ image::feedback.png[]
 * [x] Configuración de zona inside, outside y DMZ en ASA
 * [x] Sevidor syslog funcionando (mandar mensajes desde cualquier dispositivo al
 servidor).
-* [ ] Acceso mediante VPN en Router2 para host outside
-* [ ] Acceso a página web mediante el DNS www.eselfingen21.com aplicando NATeo
-estático con una Ip virtual y colocando es IP como DNS en los hosts.
-* [ ] Configuración de una IPS en Router 4 denegando el ping
+* [x] Acceso mediante VPN en Router2 para host outside
+* [x] Acceso a página web mediante el DNS `www.eselfingen21.com` aplicando NATeo
+estático con una Ip virtual y colocando esa IP como DNS en los hosts.
+* [x] Configuración de una IPS en Router 4 denegando el ping
 * [x] Configuración de usuarios y vistas en Router 4:
 ** *usuario3 -> Nivel 3 de privilegios*
 *** show running-config
