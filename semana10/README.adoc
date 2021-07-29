@@ -203,6 +203,7 @@ Después se crea una regla que le va a aplicar a las interfaces
 ip ips name iosips
 interface gi0/0 #<1>
 ip ips iosips out
+ip ips signature-definition
 signature 2004 0 #<2>
 status
 retired false
