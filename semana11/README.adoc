@@ -343,6 +343,23 @@ Observaciones::
 poder visualizar lás mismas páginas que los usuarios de la intranet
 * Se debe hacer la configuración del PAT.
 
+[NOTE]
+====
+A continuación se agregan las configuraciones del PAT
+
+[source,sh]
+----
+access-list 1 permit any
+
+ip nat inside source list 1 interface fa0/1 overload
+interface fa0/1
+ip nat outside
+
+interface fa0/0
+ip nat inside
+----
+====
+
 Recordemos el el ping de el host de internet a mi intranet debe de fallar por
 defecto. Para que no falle y halla comunicación, necesitamos, precisamente una
 VPN
