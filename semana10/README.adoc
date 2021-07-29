@@ -175,7 +175,7 @@ wr # Guardamos
 ----
 mkdir ipsdir
 dir flash
-cont t
+conf t
 # Establecemos la carpeta que creamos con el directorio raíz de nuestro IPS
 ip ips config location ipsdir
 
