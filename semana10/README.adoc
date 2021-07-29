@@ -136,8 +136,7 @@ snmp-server community privado RW
 IPS::
 * _Sistema preventor de intrusos_
 * Usado para prevenir ataques a nuestra red interna.
-* Se puede encontrar en modo activo o inline (que sonda lo que hay en un
-* interfaz o lo que sale de una interfaz)
+* Se puede encontrar en modo activo o inline (que sonda lo que hay en un interfaz o lo que sale de una interfaz)
 * Tiene cierto parecido con las ACL, sin embargo no hay servidor como tal que
 nos este mandando feedback
 
