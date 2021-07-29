@@ -28,7 +28,7 @@ image::feedback.png[]
 
 * [x] Protocolo de enrutamiento libre
 * [x] Acceso a R4 por Radius y de manera local
-* [x] Acceso a R2 por Tacacs y Radis
+* [x] Acceso a R2 por Tacacs y Radius
 * [x] Conexión de host a router inalámbrico por medio de Radius
 * [x] Configuración de webVPN para los hosts de outside entre a la página web
 * [x] Configuración de zona inside, outside y DMZ en ASA
