@@ -27,17 +27,48 @@ image::feedback.png[]
 === Capturas
 
 * [x] Protocolo de enrutamiento libre
++
+image::enrutamiento.png[]
 * [x] Acceso a R4 por Radius y de manera local
++
+image::radius-en-r4.png[]
 * [x] Acceso a R2 por Tacacs y Radius
++
+image::tacacs-en-r2.png[]
 * [x] Conexión de host a router inalámbrico por medio de Radius
++
+image::radius-inalambrico-01.png[]
+image::radius-inalambrico-02.png[]
+image::radius-inalambrico-03.png[]
 * [x] Configuración de webVPN para los hosts de outside entre a la página web
++
+image::webvpn-01.png[]
+image::webvpn-02.png[]
+image::webvpn-03.png[]
 * [x] Configuración de zona inside, outside y DMZ en ASA
++
+image::asa-inside-outside-01.png[]
+image::asa-inside-outside-02.png[]
 * [x] Sevidor syslog funcionando (mandar mensajes desde cualquier dispositivo al
 servidor).
++
+image::syslog-en-r4.png[]
+image::syslog-en-r2.png[]
+image::syslog-en-r0.png[]
 * [x] Acceso mediante VPN en Router2 para host outside
++
+image::vpn-01.png[]
+image::vpn-02.png[]
+image::vpn-03.png[]
 * [x] Acceso a página web mediante el DNS `www.eselfingen21.com` aplicando NATeo
 estático con una Ip virtual y colocando esa IP como DNS en los hosts.
++
+image::web-dmz.png[]
+image::dns-dmz-01.png[]
+image::dns-dmz-02.png[]
 * [x] Configuración de una IPS en Router 4 denegando el ping
++
+image::ips.png[]
 * [x] Configuración de usuarios y vistas en Router 4:
 ** *usuario3 -> Nivel 3 de privilegios*
 *** show running-config
