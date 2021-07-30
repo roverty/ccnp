@@ -54,11 +54,10 @@ servidor).
 +
 image::syslog-en-r4.png[]
 image::syslog-en-r2.png[]
-image::syslog-en-r0.png[]
+image::syslog-en-r0-02.png[]
 * [x] Acceso mediante VPN en Router2 para host outside
 +
 image::vpn-01.png[]
-image::vpn-02.png[]
 image::vpn-03.png[]
 * [x] Acceso a página web mediante el DNS `www.eselfingen21.com` aplicando NATeo
 estático con una Ip virtual y colocando esa IP como DNS en los hosts.
@@ -74,37 +73,81 @@ image::ips.png[]
 *** show running-config
 *** show ip route
 *** show privilege
++
+image::usuario3.png[]
 ** *usuario5 -> Nivel 5 de privilegios*
 *** ping
 *** configure-terminal
 *** hostname
++
+image::usuario5.png[]
 ** *usuario7 -> Nivel 7 de privilegios*
 *** configure terminal
 *** router rip
 *** network (redes para el enrutamiento de rip)
++
+image::usuario7.png[]
 ** *usuario9 -> Nivel 9 de privilegios*
 *** show running-config
 *** interface fastethernet
 *** ip address
 ** *usuario37 -> Nivel 15 de privilegios*
 ***  Todos los comandos del sistema.
++
+image::usuario37-01.png[]
+image::usuario37-02.png[]
 ** *usuario59 -> Nivel 15 de privilegios*
 *** Todos los comandos del sistema
++
+image::usuario59.png[]
 ** *vista 1*
 *** configure terminal
 *** ip dhcp pool
 *** show ip route
++
+image::vista1.png[]
 ** *vista 2*
 *** clock set
 *** sh ip interface brief
 *** show clock
++
+image::vista2.png[]
 ** *vista 3*
 *** show cdp neighbors
 *** show version
 *** ping
++
+image::vista3-01.png[]
+image::vista3-02.png[]
 ** *vista 4*
 *** configure terminal
 *** logging host
 *** loggin trap
++
+image::vista4.png[]
 
 === Conclusión (del curso)
+
+Pese a tener un semestre corto, me parece que es curso estuvo muy completo y
+revisando el temario proporcionado al inicio de semestre, creo que cumplieron
+con todos los puntos declarados en un inicio. Además, este curso me sirvió para
+complementar el curso anterior de CCNA, pues de algunos temas solo se toco
+lo más importante y aquí se profundizo bastante y eso me pareció bueno. Por otra
+parte, se pudieron repasar temas que podrán parecen no tan importantes y que se
+llegan a olvidar, por ejemplo, el de HSRP y lo referente a spanning tree
+protocol. 
+
+En este curso, me quedó más claro el funcionamiento de las listas de control de
+acceso así como el NAT con sus distintas variantes así como todo lo referente a
+los mecanismos de seguridad que una red tiene que implementar para poder ser
+segura. Ahora entiendo cabalemente las complicaciones e importantancia de
+administrar una red y de estarla monitoreando contantemente. Por ejemplo, la
+configuración de un firewall ASA no es sencilla y si en algún momento se desea
+escalarla, se requiere tener un buen conocimiento de como opera la red y en
+donde se pusieron NATs y enrutamiento estático, ya que de otra manera se puede
+hacer que fallen segmento de red de manera inentencionada.
+
+Por último, creo que me llevó conocimientos bastante sólidos para el mundo
+laboral y que además se complementan muy bien con los conocimientos adquiridos
+en otras materias de la facultad, así como también los conocimientos adquiridos
+por mi cuenta en temas como Linux y programación.
