@@ -128,8 +128,8 @@ image::vista4.png[]
 
 === Conclusión (del curso)
 
-Pese a tener un semestre corto, me parece que es curso estuvo muy completo y
-revisando el temario proporcionado al inicio de semestre, creo que cumplieron
+Pese a tener un semestre corto, me parece que el curso estuvo muy completo y
+revisando el temario proporcionado al inicio de semestre, creo que se cumplieron
 con todos los puntos declarados en un inicio. Además, este curso me sirvió para
 complementar el curso anterior de CCNA, pues de algunos temas solo se toco
 lo más importante y aquí se profundizo bastante y eso me pareció bueno. Por otra
@@ -141,11 +141,11 @@ En este curso, me quedó más claro el funcionamiento de las listas de control d
 acceso así como el NAT con sus distintas variantes así como todo lo referente a
 los mecanismos de seguridad que una red tiene que implementar para poder ser
 segura. Ahora entiendo cabalemente las complicaciones e importantancia de
-administrar una red y de estarla monitoreando contantemente. Por ejemplo, la
+administrar una red y de estarla monitoreando constantemente. Por ejemplo, la
 configuración de un firewall ASA no es sencilla y si en algún momento se desea
 escalarla, se requiere tener un buen conocimiento de como opera la red y en
 donde se pusieron NATs y enrutamiento estático, ya que de otra manera se puede
-hacer que fallen segmento de red de manera inentencionada.
+hacer que fallen otros segmentos de red.
 
 Por último, creo que me llevó conocimientos bastante sólidos para el mundo
 laboral y que además se complementan muy bien con los conocimientos adquiridos
