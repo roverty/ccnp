@@ -249,6 +249,8 @@ image::ids.png[]
 monitor session 1 source interface fa0/1 both
 monitor session 1 source interface fa0/2 both
 monitor session 1 source interface fa0/3 both
+
+monitor session 1 destination interface fa0/10
 ----
 
 Ahora, podemos hacer ping entre la laptop y el servidor WEB del segmento
